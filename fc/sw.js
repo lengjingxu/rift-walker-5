@@ -8,7 +8,7 @@
  * 版本：v1.4 第 4 项
  */
 
-const SW_VERSION = 'diablo-v1.4.8-rift-restart-btn';
+const SW_VERSION = 'diablo-v1.4.9-rift-minimal';
 const CACHE_SHELL = `${SW_VERSION}-shell`;
 const CACHE_DATA  = `${SW_VERSION}-data`;
 

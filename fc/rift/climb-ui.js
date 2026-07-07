@@ -1,9 +1,19 @@
-// ==================== 裂隙行者 5% · 爬塔 UI 层 (v2.1 重做) ====================
-// 用 .rift-* 新 CSS class，系统字体替代像素字体，中文 13-15px
+// ==================== 裂隙行者 5% · 爬塔 UI 层 (v2.2 极简交互) ====================
+// 原则：主页面永远只有 1 行状态 + 1 按钮。Modal 永远只问 1 件事。
+//
+// (function () {
+//   'use strict';
+//   var booted = false;
+//   function boot() {
+//     if (booted) return;
+//     var Rift = window.Rift;
+//     if (!Rift) { console.error('[Rift UI] window.Rift 仍未就绪'); return; }
+//     booted = true;
+//     var State = Rift.State, Economy = Rift.Economy, Climb = Rift.Climb;
+//     ...
 
 (function () {
   'use strict';
-
   var booted = false;
 
   function boot() {
@@ -11,113 +21,13 @@
     var Rift = window.Rift;
     if (!Rift) { console.error('[Rift UI] window.Rift 仍未就绪'); return; }
     booted = true;
-
     var State = Rift.State, Economy = Rift.Economy, Climb = Rift.Climb;
 
-    // ============================================================
-    // 启动入口
-    // ============================================================
-    function initClimbTab() {
-      var root = document.getElementById('tab-climb');
-      if (!root) { console.error('[Rift UI] #tab-climb not found'); return; }
-
-      if (root.getAttribute('data-rift-init') === '1') {
-        renderState(root);
-        return;
-      }
-      root.setAttribute('data-rift-init', '1');
-      root.innerHTML = '';
-
-      var header = document.createElement('div');
-      header.className = 'rift-header';
-      header.innerHTML =
-        '<h2 class="rift-title">⚔ 裂隙行者 5% · 爬塔</h2>' +
-        '<div class="rift-sub">// CLIMB · 35 LAYERS · 5% PATIENCE · v' + (Rift.version || '?') + '</div>';
-      root.appendChild(header);
-
-      var saved = State.load();
-      var status = (saved && saved.climb && saved.climb.status) || 'idle';
-      renderState(root);
-
-      var actions = document.createElement('div');
-      actions.className = 'rift-actions rift-row';
-
-      var isRunning = status === 'running';
-      var primaryBtn = document.createElement('button');
-      primaryBtn.className = isRunning ? 'rift-btn-primary' : 'rift-btn-primary';
-      primaryBtn.textContent = isRunning
-        ? '↻ RESUME · 楼层 ' + saved.climb.floor + '/35'
-        : '▶ 开始爬塔';
-      primaryBtn.onclick = function () {
-        if (isRunning) openFloor(saved.climb.floor);
-        else openStartOrContinue();
-      };
-      actions.appendChild(primaryBtn);
-
-      root.appendChild(actions);
-
-      // 终局元层（Phase 4 用）
-      var metaLayer = document.createElement('div');
-      metaLayer.id = 'rift-meta-layer';
-      metaLayer.className = 'rift-meta-layer';
-      metaLayer.style.display = 'none';
-      root.appendChild(metaLayer);
-
-      console.log('[Rift UI] climb tab initialized');
-    }
-
-    // ============================================================
-    // 状态卡片
-    // ============================================================
-    function renderState(root) {
-      var old = root.querySelector('.rift-state');
-      if (old) old.remove();
-
-      var s = State.load();
-      if (!s || !s.climb) return;
-
-      var status = s.climb.status || 'idle';
-      var box = document.createElement('div');
-      box.className = 'rift-state ' + status;
-
-      var runLabel = s.climb.runId ? s.climb.runId.slice(-6) : '———';
-      var destroyed = (s.choices && s.choices.destroyed) || 0;
-      var spared = (s.choices && s.choices.spared) || 0;
-
-      box.innerHTML =
-        '<div class="rs-row">' +
-          '<span class="rs-label">运行</span>' +
-          '<span class="rs-val rift-mono">' + runLabel + '</span>' +
-          '<span class="rs-label">楼层</span>' +
-          '<span class="rs-val rift-num">' + s.climb.floor + '/35</span>' +
-          '<span class="rs-label">状态</span>' +
-          '<span class="rs-val rs-status">' + statusLabel(status) + '</span>' +
-        '</div>' +
-        '<div class="rs-row">' +
-          '<span class="rs-label">生命</span>' +
-          '<span class="rs-val rift-num">' + Math.ceil(s.player.hp || 0) + '/' + Math.ceil(s.player.hpMax || 100) + '</span>' +
-          '<span class="rs-label">金币</span>' +
-          '<span class="rs-val rift-num">' + (s.player.gold || 0) + '</span>' +
-          '<span class="rs-label">血瓶</span>' +
-          '<span class="rs-val rift-num">' + countBrines(s.player) + '</span>' +
-        '</div>' +
-        '<div class="rs-row">' +
-          '<span class="rs-label">⚔ 终结</span>' +
-          '<span class="rs-val rift-num rift-text-red">' + destroyed + '</span>' +
-          '<span class="rs-label">✋ 守护</span>' +
-          '<span class="rs-val rift-num rift-text-cyan">' + spared + '</span>' +
-        '</div>';
-      root.appendChild(box);
-    }
-
+    // ================================================================
+    // 工具
+    // ================================================================
     function statusLabel(s) {
-      return {
-        idle:      '待命中',
-        running:   '爬塔中',
-        won:       '通关',
-        died:      '已死亡',
-        retreated: '撤退'
-      }[s] || s;
+      return { idle: '待命', running: '进行中', won: '通关', died: '死亡', retreated: '撤退' }[s] || s;
     }
 
     function countBrines(player) {
@@ -127,397 +37,443 @@
       return n;
     }
 
-    // ============================================================
-    // 开始 / 选职业 modal
-    // ============================================================
-    function openStartOrContinue() {
-      var s = State.load();
-      // 已有未结束爬塔：弹 "继续 / 新开始" 选项
-      if (s && s.climb.status === 'running') {
-        var existingHtml =
-          '<div class="rift-modal-shell">' +
-            '<div class="rift-modal">' +
-              '<h3 class="rift-modal-title">检测到进行中的爬塔</h3>' +
-              '<p class="rift-modal-sub">// 楼层 ' + s.climb.floor + '/35 · ' + statusLabel(s.climb.status) + '</p>' +
-              '<div class="rift-modal-body">' +
-                '上次你选 <b>' + (s.player && s.player.classId ? s.player.classId : '未选择') + '</b>，' +
-                '生命 <b class="rift-num">' + Math.ceil(s.player.hp) + '/' + Math.ceil(s.player.hpMax) + '</b>，' +
-                '金币 <b class="rift-num rift-text-orange">' + s.player.gold + '</b>。<br>' +
-                '你可以继续之前进度，也可以放弃、重新开始。' +
-              '</div>' +
-              '<div class="rift-modal-actions">' +
-                '<button class="rift-btn-primary" id="rift-resume">↻ 继续 · 楼层 ' + s.climb.floor + '</button>' +
-                '<button class="rift-btn-secondary" id="rift-restart">▶ 放弃并重新开始</button>' +
-              '</div>' +
-            '</div>' +
-          '</div>';
-        var eb = document.createElement('div');
-        eb.className = 'rift-modal-shell';
-        eb.innerHTML = existingHtml;
-        document.body.appendChild(eb);
-        eb.querySelector('#rift-resume').onclick = function () {
-          document.body.removeChild(eb);
-          openFloor(s.climb.floor);
-        };
-        eb.querySelector('#rift-restart').onclick = function () {
-          if (!window.confirm('确认放弃当前进度？这会清除已选职业与所有装备。')) return;
-          document.body.removeChild(eb);
-          State.resetRun();
-          showClassPicker();
-        };
-        return;
-      }
-      // 没有进行中爬塔，直接进职业选择
-      showClassPicker();
+    function moralSummary(s) {
+      if (!s) return '';
+      if (s.total === 0) return '';
+      var b = s.bias === 'destroy' ? '⚔' : s.bias === 'spare' ? '✋' : '·';
+      return b + ' ' + s.destroy + ' / ' + s.spare;
     }
 
-    function showClassPicker() {
+    function sLabel(s) { return s ? s.label || s : ''; }
 
-      var classes = (window.DATA && window.DATA.classes) || [];
-      var cards = '';
-      for (var i = 0; i < classes.length; i++) {
-        var c = classes[i];
-        var proto = (c && c.prototype) || (c && c.passive) || '原型未定义';
-        var skill = (c && c.skill) || (c && c.active) || '主动技能未定义';
-        var charName = (c && c.name) || c.id;
-        cards += '<div class="rift-class-card" data-cid="' + c.id + '">' +
-          '<div class="rift-class-name">' + charName + '</div>' +
-          '<div class="rift-class-prototype">原型：' + proto + '</div>' +
-          '<div class="rift-class-skill">主动：' + skill + '</div>' +
-        '</div>';
+    // ================================================================
+    // 全屏遮罩（所有 modal 共享）
+    // ================================================================
+    function openModal(innerHTML) {
+      var shell = document.createElement('div');
+      shell.className = 'rv-shell';
+      shell.innerHTML = innerHTML;
+      document.body.appendChild(shell);
+      return shell;
+    }
+
+    function closeModal(shell) {
+      if (shell && shell.parentNode) shell.parentNode.removeChild(shell);
+    }
+
+    // ================================================================
+    // 主页面（1 行状态 + 1 按钮，永远极简）
+    // ================================================================
+    function initClimbTab() {
+      var root = document.getElementById('tab-climb');
+      if (!root) { console.error('[Rift UI] #tab-climb not found'); return; }
+
+      // 重置：清空旧内容，重新构建
+      root.innerHTML = '';
+
+      // ---- 标题 ----
+      var title = document.createElement('div');
+      title.className = 'rv-title';
+      title.textContent = '⚔ 裂隙行者 5%';
+      root.appendChild(title);
+
+      // ---- 1 行状态条 ----
+      var bar = buildStatusBar();
+      root.appendChild(bar);
+
+      // ---- 主按钮 ----
+      var btn = buildMainButton();
+      root.appendChild(btn);
+
+      // ---- 终局元层占位 ----
+      var meta = document.createElement('div');
+      meta.id = 'rv-meta-layer';
+      meta.className = 'rv-meta';
+      root.appendChild(meta);
+
+      console.log('[Rift UI] v2.2 ready');
+    }
+
+    function buildStatusBar() {
+      var bar = document.createElement('div');
+      bar.className = 'rv-status-bar';
+      var s = State.load();
+      if (!s || !s.climb) {
+        bar.textContent = '// 尚未开始爬塔';
+        return bar;
       }
+      var status = s.climb.status || 'idle';
+      var hp = Math.ceil(s.player.hp || 0);
+      var hpMax = Math.ceil(s.player.hpMax || 100);
+      var gold = s.player.gold || 0;
+      var floor = s.climb.floor || 0;
+      var destroyed = (s.choices && s.choices.destroyed) || 0;
+      var spared = (s.choices && s.choices.spared) || 0;
 
-      var html =
-        '<div class="rift-modal-shell">' +
-          '<div class="rift-modal" style="max-width: 720px;">' +
-            '<h3 class="rift-modal-title">▶ 开始新爬塔</h3>' +
-            '<p class="rift-modal-sub">// 35 LAYERS · 经济可崩溃 · 命题反思</p>' +
-            '<p class="rift-modal-body">每次开始 = 5 血瓶 + 80 金币<br>每 10 层自动补给 1 个血瓶（Q5）<br>通关或死亡 → 飞书排行榜</p>' +
-            '<p class="rift-pick-label">选择职业（点击卡片）：</p>' +
-            '<div class="rift-class-picker">' + cards + '</div>' +
-            '<div class="rift-modal-actions">' +
-              '<button class="rift-btn-primary" id="rift-start-confirm" disabled>⚔ 进入爬塔</button>' +
-              '<button class="rift-btn-secondary" id="rift-start-cancel">取消</button>' +
-            '</div>' +
-          '</div>' +
-        '</div>';
-      var backdrop = document.createElement('div');
-      backdrop.className = 'rift-modal-shell';
-      backdrop.innerHTML = html;
-      document.body.appendChild(backdrop);
+      var segs = [
+        { label: '楼层', val: floor + '/35' },
+        { label: 'HP', val: hp + '/' + hpMax, cls: hp < hpMax * 0.3 ? 'rv-danger' : '' },
+        { label: '💰', val: gold },
+        { label: '血瓶', val: countBrines(s.player) },
+        { label: '⚔', val: destroyed, cls: destroyed > 0 ? 'rv-danger' : '' },
+        { label: '✋', val: spared, cls: spared > 0 ? 'rv-safe' : '' }
+      ];
 
-      var picked = null;
-      var confirm = backdrop.querySelector('#rift-start-confirm');
-      var cards2 = backdrop.querySelectorAll('.rift-class-card');
-      for (var i = 0; i < cards2.length; i++) {
-        cards2[i].onclick = function () {
-          for (var j = 0; j < cards2.length; j++) cards2[j].classList.remove('selected');
-          this.classList.add('selected');
-          picked = this.getAttribute('data-cid');
-          confirm.disabled = false;
-        };
+      for (var i = 0; i < segs.length; i++) {
+        var seg = document.createElement('span');
+        seg.className = 'rv-seg';
+        if (segs[i].cls) seg.className += ' ' + segs[i].cls;
+        seg.innerHTML = '<span class="rv-seg-label">' + segs[i].label + '</span>' +
+                        '<span class="rv-seg-val">' + segs[i].val + '</span>';
+        bar.appendChild(seg);
+        if (i < segs.length - 1) {
+          var sep = document.createElement('span');
+          sep.className = 'rv-sep';
+          sep.textContent = '|';
+          bar.appendChild(sep);
+        }
       }
+      return bar;
+    }
 
-      backdrop.querySelector('#rift-start-cancel').onclick = function () {
-        document.body.removeChild(backdrop);
+    function buildMainButton() {
+      var s = State.load();
+      var status = (s && s.climb && s.climb.status) || 'idle';
+      var isRunning = status === 'running';
+
+      var wrap = document.createElement('div');
+      wrap.className = 'rv-main-btn-wrap';
+
+      var btn = document.createElement('button');
+      btn.className = 'rv-btn-primary';
+      btn.textContent = isRunning
+        ? '↻ 继续 · 楼层 ' + s.climb.floor
+        : '▶ 开始爬塔';
+      btn.onclick = function () {
+        if (isRunning) showResumeModal(s);
+        else openStartOrContinue();
       };
-      confirm.onclick = function () {
-        if (!picked) return;
-        State.newRun(picked, 80, 5);
-        document.body.removeChild(backdrop);
-        initClimbTab();
+      wrap.appendChild(btn);
+      return wrap;
+    }
+
+    function refreshMainPage() {
+      var root = document.getElementById('tab-climb');
+      if (!root) return;
+      // 重建状态条和按钮（保留标题和 meta 层）
+      var oldBar = root.querySelector('.rv-status-bar');
+      var oldBtn = root.querySelector('.rv-main-btn-wrap');
+      if (oldBar) oldBar.remove();
+      if (oldBtn) oldBtn.remove();
+      var metaLayer = root.querySelector('#rv-meta-layer');
+      root.insertBefore(buildStatusBar(), metaLayer);
+      root.insertBefore(buildMainButton(), metaLayer);
+    }
+
+    // ================================================================
+    // Modal 1：检测到进行中的爬塔 → 继续 / 重新开始
+    // ================================================================
+    function showResumeModal(s) {
+      var clsId = s.player && s.player.classId || '未知';
+      var floor = s.climb.floor;
+      var hp = Math.ceil(s.player.hp);
+      var hpMax = Math.ceil(s.player.hpMax);
+      var gold = s.player.gold;
+
+      var shell = openModal(
+        '<div class="rv-modal">' +
+          '<div class="rv-modal-q">已有爬塔进行中</div>' +
+          '<div class="rv-modal-info">' +
+            clsId + ' · ' + floor + '/35 层 · ' + hp + '/' + hpMax + ' HP · 💰' + gold +
+          '</div>' +
+          '<div class="rv-modal-actions">' +
+            '<button class="rv-btn-primary rv-btn-full" id="rv-resume">↻ 继续</button>' +
+            '<button class="rv-btn-ghost rv-btn-full" id="rv-restart">重新开始</button>' +
+          '</div>' +
+        '</div>'
+      );
+      shell.querySelector('#rv-resume').onclick = function () {
+        closeModal(shell);
         openFloor(State.load().climb.floor);
       };
+      shell.querySelector('#rv-restart').onclick = function () {
+        closeModal(shell);
+        if (window.confirm('放弃当前进度？')) {
+          State.resetRun();
+          showClassPicker();
+        }
+      };
     }
 
-    // ============================================================
-    // 进入一层
-    // ============================================================
+    // ================================================================
+    // Modal 2：选职业（6 选 1，极简）
+    // ================================================================
+    function showClassPicker() {
+      var classes = (window.DATA && window.DATA.classes) || [];
+
+      var cardsHtml = '';
+      for (var i = 0; i < classes.length; i++) {
+        var c = classes[i];
+        var name = (c && (c.name || c.id)) || 'unknown';
+        var trait = (c && (c.prototype || c.passive || c.trait)) || '—';
+        cardsHtml +=
+          '<button class="rv-class-card" data-cid="' + (c.id || name) + '">' +
+            '<div class="rv-class-name">' + name + '</div>' +
+            '<div class="rv-class-trait">' + trait + '</div>' +
+          '</button>';
+      }
+
+      var shell = openModal(
+        '<div class="rv-modal rv-modal-wide">' +
+          '<div class="rv-modal-q">选择职业</div>' +
+          '<div class="rv-class-grid">' + cardsHtml + '</div>' +
+          '<div class="rv-modal-actions">' +
+            '<button class="rv-btn-primary rv-btn-full" id="rv-confirm-start" disabled>⚔ 进入爬塔</button>' +
+          '</div>' +
+        '</div>'
+      );
+
+      var picked = null;
+      var cards = shell.querySelectorAll('.rv-class-card');
+      for (var i = 0; i < cards.length; i++) {
+        cards[i].onclick = function () {
+          for (var j = 0; j < cards.length; j++) cards[j].classList.remove('rv-selected');
+          this.classList.add('rv-selected');
+          picked = this.getAttribute('data-cid');
+          shell.querySelector('#rv-confirm-start').disabled = false;
+        };
+      }
+
+      shell.querySelector('#rv-confirm-start').onclick = function () {
+        if (!picked) return;
+        closeModal(shell);
+        State.newRun(picked, 80, 5);
+        refreshMainPage();
+        openFloor(1);
+      };
+    }
+
+    // ================================================================
+    // Modal 3：楼层战斗前（极简：怪物 + 胜率 + 2 按钮）
+    // ================================================================
     function openFloor(floor) {
       var s = State.load();
-      var isBoss = Climb.isBossFloor(floor);
 
       // Q5：每 10 层免费血瓶
-      if ([10, 20, 30].indexOf(floor) >= 0 && s && s.player && s.player.brines) {
+      if ([10, 20, 30].indexOf(floor) >= 0) {
         addFreeBrine(s, 1);
         State.save(s);
+        refreshMainPage();
       }
 
       var monster = Climb.spawnMonsterForFloor(floor);
-      var winPct = Climb.getContinueProbability(s, monster);
-      winPct = Math.max(0, Math.min(100, winPct));
+      var isBoss = Climb.isBossFloor(floor);
+      var winPct = Math.max(0, Math.min(100, Climb.getContinueProbability(s, monster)));
 
-      var monsterCard =
-        '<div class="rift-monster-card rift-tier-' + (isBoss ? 'boss' : (monster.tier || 'normal')) + '">' +
-          (isBoss ? '' : '<div class="rift-row rift-row-end"><span class="rift-monster-tag ' + (monster.tier || 'normal') + '">' + (monster.tier || 'normal').toUpperCase() + '</span></div>') +
-          '<div class="rift-monster-name">' + monster.name + '</div>' +
-          '<div class="rift-monster-stat">' +
-            '<span class="lbl">HP</span><span class="val">' + monster.hp + '</span>' +
-            '<span class="lbl">AC</span><span class="val">' + monster.ac + '</span>' +
-            '<span class="lbl">DMG</span><span class="val danger">' + monster.dmg + '</span>' +
-            (monster.elem ? '<span class="lbl">ELEM</span><span class="val warn">' + monster.elem + '</span>' : '') +
+      var winColor = winPct >= 70 ? 'rv-good' : winPct >= 40 ? 'rv-warn' : 'rv-bad';
+
+      var shell = openModal(
+        '<div class="rv-modal">' +
+          '<div class="rv-floor-badge">楼层 ' + floor + '/35' + (isBoss ? ' · BOSS' : '') + '</div>' +
+          '<div class="rv-monster-name' + (isBoss ? ' rv-boss-name' : '') + '">' + monster.name + '</div>' +
+          '<div class="rv-monster-stats">HP ' + monster.hp + ' · AC ' + monster.ac + ' · DMG ' + monster.dmg + '</div>' +
+          '<div class="rv-win-row">' +
+            '<span class="rv-win-label">胜率</span>' +
+            '<div class="rv-win-track"><div class="rv-win-fill ' + winColor + '" style="width:' + winPct + '%"></div></div>' +
+            '<span class="rv-win-pct ' + winColor + '">' + winPct.toFixed(0) + '%</span>' +
           '</div>' +
-        '</div>';
-
-      var html =
-        '<div class="rift-modal-shell">' +
-          '<div class="rift-modal" style="max-width: 560px;">' +
-            '<h3 class="rift-modal-title">楼层 ' + floor + '/35</h3>' +
-            '<p class="rift-modal-sub">// ' + (isBoss ? 'BOSS GATE' : (monster.tier || 'monster')) + ' · 难度递增</p>' +
-            monsterCard +
-            '<div class="rift-win-bar">' +
-              '<span class="rift-win-label">胜率</span>' +
-              '<div class="rift-win-track"><div class="rift-win-fill ' + winCls(winPct) + '" style="width:' + winPct + '%"></div></div>' +
-              '<span class="rift-win-pct ' + winCls(winPct) + '">' + winPct.toFixed(0) + '%</span>' +
-            '</div>' +
-            '<div class="rift-modal-actions">' +
-              (isBoss && monster.moralChoice
-                ? '<button class="rift-btn-primary rift-action-boss">⚔ 进入 Boss 战</button>'
-                : '<button class="rift-btn-primary rift-action-fight">⚔ 战斗</button>') +
-              '<button class="rift-btn-secondary rift-action-retreat">↩ 撤退</button>' +
-            '</div>' +
+          '<div class="rv-modal-actions">' +
+            (isBoss && monster.moralChoice
+              ? '<button class="rv-btn-primary rv-btn-full" id="rv-fight">⚔ 进入 Boss 战</button>'
+              : '<button class="rv-btn-primary rv-btn-full" id="rv-fight">⚔ 战斗</button>') +
+            '<button class="rv-btn-ghost rv-btn-full" id="rv-retreat">↩ 撤退</button>' +
           '</div>' +
-        '</div>';
+        '</div>'
+      );
 
-      var backdrop = document.createElement('div');
-      backdrop.className = 'rift-modal-shell';
-      backdrop.innerHTML = html;
-      document.body.appendChild(backdrop);
-
-      var fb = backdrop.querySelector('.rift-action-fight');
-      if (fb) fb.onclick = function () {
-        document.body.removeChild(backdrop);
-        runBattleAndDecide(monster, false);
+      shell.querySelector('#rv-fight').onclick = function () {
+        closeModal(shell);
+        if (isBoss) promptMoralChoiceThenBoss(monster);
+        else runBattleAndDecide(monster, false);
       };
-      var rb = backdrop.querySelector('.rift-action-retreat');
-      if (rb) rb.onclick = function () {
-        if (!window.confirm('确认撤退？你能带出当前所有装备，但放弃本层奖励。')) return;
-        document.body.removeChild(backdrop);
+      shell.querySelector('#rv-retreat').onclick = function () {
+        if (!window.confirm('撤退？可带出当前装备。')) return;
+        closeModal(shell);
         State.retreat();
-        showDeathModal(false);
-      };
-      var bb = backdrop.querySelector('.rift-action-boss');
-      if (bb) bb.onclick = function () {
-        document.body.removeChild(backdrop);
-        promptMoralChoiceThenBoss(monster);
+        showSettlementModal(false);
       };
     }
 
-    function winCls(p) {
-      if (p >= 70) return 'good';
-      if (p >= 40) return 'warn';
-      return 'bad';
-    }
-
-    // ============================================================
-    // Boss 战：道德选择 modal
-    // ============================================================
+    // ================================================================
+    // Modal 4：道德选择（Boss 战前，极简）
+    // ================================================================
     function promptMoralChoiceThenBoss(boss) {
       var mc = Climb.showMoralChoice(boss.id);
+      var lore = (boss && (boss.lore || boss.theme)) || mc.theme || '';
 
-      var html =
-        '<div class="rift-modal-shell">' +
-          '<div class="rift-modal" style="max-width: 640px;">' +
-            '<h3 class="rift-modal-title">' + mc.bossName + '</h3>' +
-            '<p class="rift-modal-sub">// BOSS · ' + mc.theme + '</p>' +
-            '<div class="rift-modal-body" style="white-space:pre-wrap; line-height:1.8;">' +
-              (boss.lore || boss.theme || 'Trinity has no face. Trinity has only decisions.') +
-            '</div>' +
-            '<p class="rift-pick-label">你要如何面对这个 Boss？</p>' +
-            '<div class="rift-choice-grid">' +
-              '<button class="rift-choice danger" id="rift-moral-a">' +
-                '<span class="ch-label">' + mc.choiceA.label + '</span>' +
-                '<span class="ch-desc">' + mc.choiceA.text + '</span>' +
-              '</button>' +
-              '<button class="rift-choice" id="rift-moral-b">' +
-                '<span class="ch-label">' + mc.choiceB.label + '</span>' +
-                '<span class="ch-desc">' + mc.choiceB.text + '</span>' +
-              '</button>' +
-            '</div>' +
+      var shell = openModal(
+        '<div class="rv-modal rv-modal-wide">' +
+          '<div class="rv-floor-badge rv-boss-badge">' + mc.bossName + ' · BOSS</div>' +
+          '<div class="rv-boss-lore">' + lore + '</div>' +
+          '<div class="rv-choice-row">' +
+            '<button class="rv-choice-btn rv-choice-destroy" id="rv-choose-a">' +
+              '<span class="rv-choice-label">' + mc.choiceA.label + '</span>' +
+              '<span class="rv-choice-desc">' + mc.choiceA.text + '</span>' +
+            '</button>' +
+            '<button class="rv-choice-btn rv-choice-spare" id="rv-choose-b">' +
+              '<span class="rv-choice-label">' + mc.choiceB.label + '</span>' +
+              '<span class="rv-choice-desc">' + mc.choiceB.text + '</span>' +
+            '</button>' +
           '</div>' +
-        '</div>';
+        '</div>'
+      );
 
-      var backdrop = document.createElement('div');
-      backdrop.className = 'rift-modal-shell';
-      backdrop.innerHTML = html;
-      document.body.appendChild(backdrop);
-
-      backdrop.querySelector('#rift-moral-a').onclick = function () {
+      shell.querySelector('#rv-choose-a').onclick = function () {
         State.setChoice('destroyed');
-        document.body.removeChild(backdrop);
+        closeModal(shell);
         runBattleAndDecide(boss, true);
       };
-      backdrop.querySelector('#rift-moral-b').onclick = function () {
+      shell.querySelector('#rv-choose-b').onclick = function () {
         State.setChoice('spared');
-        document.body.removeChild(backdrop);
+        closeModal(shell);
         runBattleAndDecide(boss, true);
       };
     }
 
-    // ============================================================
-    // 跑一场战斗
-    // ============================================================
+    // ================================================================
+    // 战斗核心
+    // ================================================================
     function runBattleAndDecide(monster, isBoss) {
-      var s = State.load();
       var result = State.simulateRiftBattle(monster);
-      var won = result && result.win;
-
-      if (won) {
+      if (result && result.win) {
+        var s = State.load();
         var reward = Economy.calculateTileReward(s.climb.floor);
         s.player.gold += reward.gold;
         if (reward.brines) addFreeBrine(s, reward.brines);
         State.save(s);
-        showBattleResult(true, isBoss, monster, reward);
+
+        if (s.climb.floor === 35) {
+          State.advanceFloor();
+          refreshMainPage();
+          showVictoryModal();
+        } else {
+          State.advanceFloor();
+          refreshMainPage();
+          showVictoryModal(monster, reward);
+        }
       } else {
         State.die('defeated by ' + monster.name);
-        showDeathModal(true);
+        showSettlementModal(true);
       }
     }
 
-    function showBattleResult(won, isBoss, monster, reward) {
+    // ================================================================
+    // Modal 5：战斗胜利（极简）
+    // ================================================================
+    function showVictoryModal(monster, reward) {
       var s = State.load();
-      var isFinalBossFloor = s.climb.floor === 35;
+      var nextFloor = s.climb.floor + 1;
+      var rewardText = reward
+        ? (reward.gold > 0 ? '💰 +' + reward.gold : '') +
+          (reward.brines > 0 ? ' 🩸 +' + reward.brines : '')
+        : '';
 
-      if (isFinalBossFloor) {
-        State.advanceFloor();
-        showMetaLayer();
-        return;
-      }
-
-      State.advanceFloor();
-
-      var html =
-        '<div class="rift-modal-shell">' +
-          '<div class="rift-modal">' +
-            '<h3 class="rift-modal-title rift-text-green">⚔ 胜利 · ' + monster.name + '</h3>' +
-            '<p class="rift-modal-sub">// ' + (isBoss ? 'BOSS GATE 已通过' : '战斗胜利') + '</p>' +
-            '<div class="rift-modal-body">' +
-              '<div class="rift-row" style="font-size:15px; gap:24px;">' +
-                '<span>💰 <b class="rift-num rift-text-orange">+' + reward.gold + '</b> 金币</span>' +
-                (reward.brines ? '<span>🩸 <b class="rift-num rift-text-red">+' + reward.brines + '</b> 血瓶</span>' : '') +
-                (reward.itemRarity ? '<span>📦 <b>' + reward.itemRarity + '</b> 装备</span>' : '') +
-              '</div>' +
-            '</div>' +
-            '<div class="rift-modal-actions">' +
-              '<button class="rift-btn-primary" id="rift-go-next">▶ 继续 → 楼层 ' + (s.climb.floor + 1) + '</button>' +
-              '<button class="rift-btn-secondary" id="rift-stop-climb">↩ 结束本次爬塔</button>' +
-            '</div>' +
+      var shell = openModal(
+        '<div class="rv-modal">' +
+          '<div class="rv-outcome rv-outcome-win">⚔ 胜利</div>' +
+          (monster ? '<div class="rv-outcome-sub">' + monster.name + ' 已击败</div>' : '') +
+          (rewardText ? '<div class="rv-outcome-reward">' + rewardText + '</div>' : '') +
+          '<div class="rv-modal-actions">' +
+            '<button class="rv-btn-primary rv-btn-full" id="rv-next-floor">▶ 继续 · 楼层 ' + nextFloor + '</button>' +
+            '<button class="rv-btn-ghost rv-btn-full" id="rv-end-here">↩ 结束爬塔</button>' +
           '</div>' +
-        '</div>';
+        '</div>'
+      );
 
-      var backdrop = document.createElement('div');
-      backdrop.className = 'rift-modal-shell';
-      backdrop.innerHTML = html;
-      document.body.appendChild(backdrop);
-
-      backdrop.querySelector('#rift-go-next').onclick = function () {
-        document.body.removeChild(backdrop);
-        initClimbTab();
-        openFloor(State.load().climb.floor);
+      shell.querySelector('#rv-next-floor').onclick = function () {
+        closeModal(shell);
+        openFloor(nextFloor);
       };
-      backdrop.querySelector('#rift-stop-climb').onclick = function () {
-        document.body.removeChild(backdrop);
+      shell.querySelector('#rv-end-here').onclick = function () {
+        closeModal(shell);
         State.retreat();
-        showDeathModal(false);
+        showSettlementModal(false);
       };
     }
 
-    // ============================================================
-    // 死亡 / 退场结算
-    // ============================================================
-    function showDeathModal(isDeath) {
+    // ================================================================
+    // Modal 6：通关（终局）
+    // ================================================================
+    function showVictoryModal() {
+      var meta = document.getElementById('rv-meta-layer');
+      if (meta) {
+        meta.style.display = 'flex';
+        meta.innerHTML =
+          '<div class="rv-meta-inner">' +
+            '<div class="rv-meta-line">> 你通关了。</div>' +
+            '<div class="rv-meta-line">> 5% 不是失败率。</div>' +
+            '<div class="rv-meta-line">> 5% 是你愿意为不完美活着的概率。</div>' +
+          '</div>';
+      }
+      refreshMainPage();
+    }
+
+    // ================================================================
+    // Modal 7：结算（死亡 / 撤退）
+    // ================================================================
+    function showSettlementModal(isDeath) {
       var s = State.load();
       var loot = Climb.calculateDeathLoot(s);
 
-      var html =
-        '<div class="rift-modal-shell">' +
-          '<div class="rift-modal" style="max-width: 540px;">' +
-            '<h3 class="rift-modal-title ' + (isDeath ? 'rift-text-red' : 'rift-text-orange') + '">' +
-              (isDeath ? '💀 你已死亡' : '↩ 你撤退了') + 
-            '</h3>' +
-            '<p class="rift-modal-sub">// 楼层 ' + loot.floorReached + '/35 · 道德: ' + moralSummary(loot.moralSummary) + '</p>' +
-            '<table class="rift-loot">' +
-              '<thead><tr><th>带出</th><th>失去</th></tr></thead>' +
-              '<tbody>' +
-                '<tr>' +
-                  '<td><span class="rift-brought">' + (loot.broughtOut ? loot.broughtOut.length : 0) + '</span> 件装备<br><span class="rift-mono rift-text-orange">金币 ' + loot.goldRemaining + '</span></td>' +
-                  '<td><span class="rift-lost">' + (loot.lost ? loot.lost.length : 0) + '</span> 件装备</td>' +
-                '</tr>' +
-              '</tbody>' +
-            '</table>' +
-            '<p class="rift-loot-foot">' +
-              '（Q11）不显示分数。装备与金币 = 你带出 / 失去的一切。' +
-            '</p>' +
-            '<div class="rift-modal-actions">' +
-              '<button class="rift-btn-primary" id="rift-new-climb">▶ 开始新爬塔</button>' +
-              '<button class="rift-btn-secondary" id="rift-close-death">关闭</button>' +
+      var moral = moralSummary(loot.moralSummary);
+
+      var shell = openModal(
+        '<div class="rv-modal">' +
+          '<div class="rv-outcome ' + (isDeath ? 'rv-outcome-die' : 'rv-outcome-retreat') + '">' +
+            (isDeath ? '💀 死亡' : '↩ 撤退') +
+          '</div>' +
+          '<div class="rv-settlement-row">' +
+            '<div class="rv-settlement-cell">' +
+              '<div class="rv-settlement-big rv-safe">' + (loot.broughtOut ? loot.broughtOut.length : 0) + '</div>' +
+              '<div class="rv-settlement-label">带出</div>' +
+            '</div>' +
+            '<div class="rv-settlement-cell">' +
+              '<div class="rv-settlement-big rv-danger">' + (loot.lost ? loot.lost.length : 0) + '</div>' +
+              '<div class="rv-settlement-label">失去</div>' +
             '</div>' +
           '</div>' +
-        '</div>';
+          '<div class="rv-settlement-info">💰 ' + loot.goldRemaining + ' 金币' +
+            (moral ? ' · ' + moral : '') +
+            ' · 楼层 ' + loot.floorReached + '/35' +
+          '</div>' +
+          '<div class="rv-modal-actions">' +
+            '<button class="rv-btn-primary rv-btn-full" id="rv-new-run">▶ 重新开始</button>' +
+          '</div>' +
+        '</div>'
+      );
 
-      var backdrop = document.createElement('div');
-      backdrop.className = 'rift-modal-shell';
-      backdrop.innerHTML = html;
-      document.body.appendChild(backdrop);
-
-      backdrop.querySelector('#rift-close-death').onclick = function () {
-        document.body.removeChild(backdrop);
-        initClimbTab();
-      };
-      backdrop.querySelector('#rift-new-climb').onclick = function () {
-        document.body.removeChild(backdrop);
+      shell.querySelector('#rv-new-run').onclick = function () {
+        closeModal(shell);
+        refreshMainPage();
         openStartOrContinue();
       };
     }
 
-    function moralSummary(m) {
-      if (!m || m.total === 0) return '选择尚未做出';
-      var bias = m.bias === 'destroy' ? '偏向终结' : m.bias === 'spare' ? '偏向守护' : '中立';
-      return bias + ' · ⚔' + m.destroy + ' / ✋' + m.spare;
-    }
-
-    // ============================================================
-    // 终局元层
-    // ============================================================
-    function showMetaLayer() {
-      var box = document.getElementById('rift-meta-layer');
-      if (!box) return;
-      box.style.display = 'flex';
-      box.innerHTML =
-        '<div class="rift-meta-glitch">' +
-          '<div class="rift-meta-text">' +
-            '&gt; 测试主体 #LJX-001<br>' +
-            '&gt; 攻防演练评估: 进行中<br><br>' +
-            '&gt; 你并不在反抗 Trinity。<br>' +
-            '&gt; Trinity 在测试你。<br><br>' +
-            '&gt; 5% 不是失败率。<br>' +
-            '&gt; 5% 是你愿意为不完美活着的概率。' +
-          '</div>' +
-        '</div>';
-    }
-
-    // ============================================================
+    // ================================================================
     // 辅助
-    // ============================================================
+    // ================================================================
     function addFreeBrine(s, amount) {
       if (!s.player.brines) s.player.brines = [];
       s.player.brines.push({ id: 'free-' + Date.now(), amount: amount });
     }
 
-    // ============================================================
-    // 导出
-    // ============================================================
-    window.RiftUI = {
-      init: initClimbTab,
-      openStart: openStartOrContinue,
-      openFloor: openFloor,
-      showMetaLayer: showMetaLayer,
-      _debug: { booted: true, hasState: typeof State, hasClimb: typeof Climb }
-    };
+    // ================================================================
+    // 暴露 / 启动
+    // ================================================================
+    window.RiftUI = { init: initClimbTab };
 
     document.addEventListener('click', function (e) {
-      var t = e.target;
-      var btn = t && t.closest && t.closest('button.tab[data-tab="climb"]');
+      var btn = e.target && e.target.closest && e.target.closest('button.tab[data-tab="climb"]');
       if (btn) setTimeout(initClimbTab, 0);
     });
 
@@ -527,29 +483,24 @@
       document.addEventListener('DOMContentLoaded', initClimbTab);
     }
 
-    var d = document.createElement('div');
-    d.id = 'rift-debug-widget';
-    document.body.appendChild(d);
-    function refreshDebug() {
-      var root = document.getElementById('tab-climb');
-      var btn = document.querySelector('.rift-btn-primary');
-      d.textContent =
-        '⚔ RIFT DEBUG\n' +
-        'Rift: ' + (window.Rift ? window.Rift.version : 'NOT-LOADED') + '\n' +
-        'tab-climb: ' + (root ? 'YES' : 'NO') + '\n' +
-        'initialized: ' + (root ? root.getAttribute('data-rift-init') : '-') + '\n' +
-        'start btn: ' + (btn ? 'YES' : 'NO') + '\n' +
-        'status: ' + (State && State.load() ? State.load().climb.status : 'none');
-    }
-    refreshDebug();
-    setInterval(refreshDebug, 2500);
-  }
+    // Debug widget（小而不扰）
+    var dw = document.createElement('div');
+    dw.id = 'rv-debug';
+    document.body.appendChild(dw);
+    setInterval(function () {
+      var s = State.load();
+      dw.textContent = s
+        ? 'v2.2 ' + (s.climb && s.climb.status || '?') + ' f' + (s.climb && s.climb.floor || 0)
+        : 'v2.2 no-state';
+    }, 3000);
 
-  function waitRift(attempt) {
-    attempt = attempt || 0;
-    if (window.Rift) { boot(); return; }
-    if (attempt > 80) { console.error('[Rift UI] window.Rift 4s 内未就绪'); return; }
-    setTimeout(function () { waitRift(attempt + 1); }, 50);
+    // ---- waitRift ----
+    function waitRift(attempt) {
+      attempt = attempt || 0;
+      if (window.Rift) { boot(); return; }
+      if (attempt > 80) { console.error('[Rift UI] window.Rift 4s 内未就绪'); return; }
+      setTimeout(function () { waitRift(attempt + 1); }, 50);
+    }
+    waitRift();
   }
-  waitRift();
 })();
