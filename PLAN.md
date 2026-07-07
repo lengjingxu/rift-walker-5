@@ -9,13 +9,13 @@
 **目标**：跑通基础循环，无美术、无叙事、无嵌入
 
 ### 任务清单
-- [ ] **T1.1** `src/rift/state.js` —— 新 state 模块（爬塔进度 / 资源池 / 带入清单）
-- [ ] **T1.2** `src/rift/climb.js` —— 主循环（层 → 战斗 → 决策 → 继续/撤退 modal）
+- [x] **T1.1** `src/rift/state.js` —— 新 state 模块（爬塔进度 / 资源池 / 带入清单）
+- [x] **T1.2** `src/rift/climb.js` —— 主循环（层 → 战斗 → 决策 → 继续/撤退 modal）
 - [ ] **T1.3** `src/rift/rest.js` —— 休息站 UI（换装 / 升级 / 融入三个 tab）
-- [ ] **T1.4** `src/rift/economy.js` —— 金币 / 血瓶 / 卖出 / 兑换
+- [x] **T1.4** `src/rift/economy.js` —— 金币 / 血瓶 / 卖出 / 兑换
 - [ ] **T1.5** `src/rift/battle.js` —— `simulateBattle` 改开放式 tick 战斗
 - [ ] **T1.6** 60 怪列表扩展（基于现有 13 怪 + 自动难度曲线 47 怪）
-- [ ] **T1.7** 7 boss 列表 + boss gate 检测
+- [x] **T1.7** 7 boss 列表 + boss gate 检测
 
 ### 验收
 - 能起手进入爬塔，第 1 层战斗可见飘字

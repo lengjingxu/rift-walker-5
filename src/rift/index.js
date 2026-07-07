@@ -27,8 +27,9 @@
     Economy: window.Economy,
     Climb:   window.Climb,
     Game:    window.Game,
-    version: '2.0.0',
-    buildAt: '2026-07-07'
+    Rest:    window.Rest,
+    version: '2.1.0',
+    buildAt: '2026-07-08'
   };
 
   // ---- 一键 debug 入口 ----

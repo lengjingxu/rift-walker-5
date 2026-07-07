@@ -188,6 +188,7 @@
           '</div>' +
           '<div class="rv-modal-actions">' +
             '<button class="rv-btn-primary rv-btn-full" id="rv-resume">↻ 继续</button>' +
+            '<button class="rv-btn-ghost rv-btn-full" id="rv-go-rest">🏕 进休息站</button>' +
             '<button class="rv-btn-ghost rv-btn-full" id="rv-restart">重新开始</button>' +
           '</div>' +
         '</div>'
@@ -195,6 +196,14 @@
       shell.querySelector('#rv-resume').onclick = function () {
         closeModal(shell);
         openFloor(State.load().climb.floor);
+      };
+      shell.querySelector('#rv-go-rest').onclick = function () {
+        closeModal(shell);
+        if (window.Rest && typeof window.Rest.open === 'function') {
+          window.Rest.open();
+        } else {
+          console.warn('[Rift UI] window.Rest 未加载');
+        }
       };
       shell.querySelector('#rv-restart').onclick = function () {
         closeModal(shell);
