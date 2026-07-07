@@ -231,8 +231,11 @@ Economy.fuseItems = function (items) {
 Economy._generateFusedItem = function (slot, rarity, ilvl) {
   // 简化版：用 DATA.baseItems 中对应槽位的基础装备 + 稀有度的词条数量
   // 需要 DATA 和 Game 模块，这里用独立逻辑避免硬依赖
-  const basePool = (typeof DATA !== 'undefined' && DATA.baseItems) ? DATA.baseItems[slot] : [];
-  if (basePool.length === 0) {
+  let basePool = [];
+  if (slot && typeof DATA !== 'undefined' && DATA.baseItems && DATA.baseItems[slot]) {
+    basePool = DATA.baseItems[slot];
+  }
+  if (!basePool || basePool.length === 0) {
     // fallback：生成空壳装备
     return {
       uid: (typeof Game !== 'undefined' && Game.uid) ? Game.uid() : Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
@@ -353,8 +356,11 @@ Economy._generateLegendaryFusedItem = function (slot, ilvl) {
   }
 
   // fallback：生成 T6 紫词条稀有装
-  const basePool = (typeof DATA !== 'undefined' && DATA.baseItems) ? DATA.baseItems[slot] : [];
-  const base = basePool.length > 0 ? basePool[basePool.length - 1] : { name: '传奇碎片', base: {} };
+  let basePool = [];
+  if (slot && typeof DATA !== 'undefined' && DATA.baseItems && DATA.baseItems[slot]) {
+    basePool = DATA.baseItems[slot];
+  }
+  const base = basePool && basePool.length > 0 ? basePool[basePool.length - 1] : { name: '传奇碎片', base: {} };
 
   // 生成高强度 mods（模拟 T6）
   const mods = {};

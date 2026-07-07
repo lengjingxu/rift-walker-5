@@ -92,9 +92,10 @@ Climb.spawnMonsterForFloor = function (floor) {
     if (bossMonster) {
       return {
         ...bossMonster,
+        boss: true,             // 确保标记为 boss（DATA.monsters 可能缺少此字段）
         id: bossInfo.id,
         floor,
-        moralChoice: true   // boss 层都有道德二选一
+        moralChoice: true       // boss 层都有道德二选一
       };
     }
     // 兜底：用 BOSS_MAP 构造
@@ -114,15 +115,33 @@ Climb.spawnMonsterForFloor = function (floor) {
   };
 };
 
-/** 从 DATA.monsters 按 name 模糊查找 */
+/** 从 DATA.monsters 按 name 查找 boss 怪物
+ *  先精确匹配，再部分匹配（取最短匹配避免误匹配 "Trinity 副脑" 为 "Trinity 核心"）
+ */
 Climb._findMonsterByName = function (name) {
   if (typeof DATA === 'undefined' || !DATA.monsters) return null;
-  // boss 名匹配（支持部分匹配：如 "漫游者" 匹配 BOSS_MAP "漫游者·王"）
+  // 精确匹配
   const exact = DATA.monsters.find(m => m.name === name);
   if (exact) return exact;
-  // 部分匹配
-  const key = name.split('·')[0].split(' ')[0];
-  return DATA.monsters.find(m => m.name.includes(key)) || null;
+  // 拆分关键词匹配：优先匹配 boss tier，再按名称相似度
+  const bosses = DATA.monsters.filter(m => m.tier === 'boss');
+  // 尝试以 BOSS_MAP name 的每个词片段匹配 boss 列表
+  const keywords = name.split(/[·\s]/);
+  let bestMatch = null;
+  let bestScore = 0;
+  for (const b of bosses) {
+    const bKeywords = b.name.split(/[·\s]/);
+    let score = 0;
+    for (const kw of keywords) {
+      if (bKeywords.some(bk => bk.includes(kw) || kw.includes(bk))) score++;
+    }
+    if (score > bestScore) { bestScore = score; bestMatch = b; }
+  }
+  // 如果关键词匹配分数 ≥ 1，返回最佳匹配
+  if (bestMatch && bestScore >= 1) return bestMatch;
+  // 兜底：普通匹配
+  const key = name.split('·')[0];
+  return DATA.monsters.find(m => m.name.startsWith(key) && m.tier === 'boss') || null;
 };
 
 /** 当 DATA.monsters 里找不到 boss 时，从 BOSS_MAP 构造一个 */
@@ -150,24 +169,30 @@ Climb._getMonsterPoolForFloor = function (floor) {
   if (typeof DATA === 'undefined' || !DATA.monsters) {
     return Climb._fallbackPool(floor);
   }
-  const normals   = DATA.monsters.filter(m => m.tier === 'normal');
-  const elites    = DATA.monsters.filter(m => m.tier === 'elite');
-  const bosses    = DATA.monsters.filter(m => m.tier === 'boss');
+  const normals   = DATA.monsters.filter(m => m.tier === 'normal').slice().sort((a, b) => a.level - b.level);
+  const elites    = DATA.monsters.filter(m => m.tier === 'elite').slice().sort((a, b) => a.level - b.level);
+
+  // Q12 + 心流：前轻后重。前 5 层只用 level 1-2 的最弱怪，让玩家先建立缓冲
+  // (用 level 字段筛，不只看 HP)
+  const easyNormals = normals.filter(m => m.level <= 15);
+  const midNormals  = normals.filter(m => m.level <= 35);
+  const hardNormals = normals;
 
   if (floor <= 5) {
-    // 前 5 层教学期：只用 normal（Q12 刻意前轻）
-    return normals;
+    // 教学期：只用 level 1-15 的怪（漫游者 + 算法警察 + 优化战士）
+    return easyNormals.length > 0 ? easyNormals : normals;
   }
   if (floor <= 15) {
-    // 累积期：normal 为主，少量 elite
-    return [...normals, ...normals, ...normals, ...elites];
+    // 累积期：normal 主体，少量 elite
+    const midPool = midNormals.length > 0 ? midNormals : normals;
+    return [...midPool, ...midPool, ...midPool, ...elites];
   }
   if (floor <= 25) {
-    // 赌时期：normal + elite 均衡
-    return [...normals, ...elites, ...elites];
+    // 赌时期：normal + elite 均衡（含 hard normal）
+    return [...hardNormals, ...elites, ...elites];
   }
   // 终局 26-35：elite 为主，少量 normal
-  return [...elites, ...elites, ...elites, ...normals];
+  return [...elites, ...elites, ...elites, ...hardNormals];
 };
 
 /** 无 DATA 时的兜底怪池 */
@@ -216,11 +241,23 @@ Climb._scaleMonsterForFloor = function (template, floor) {
  * @param {object} monster - 怪物对象 { hp, ac, dmg, elem, boss }
  * @returns {number} 0~100 的胜率百分比
  */
-Climb.getContinueProbability = function (player, monster) {
-  // 需要 Game.aggregateBuild / calcDPS / calcEffectiveHP
+Climb.getContinueProbability = function (stateOrPlayer, monster) {
+  // 兼容两种调用：state 对象（State.load() 返回） / player 对象（Game.aggregateBuild 期望的形态）
+  // 优先看是否有 classId + baseStats + equipped 全字段（=player）
+  let player = stateOrPlayer;
+  if (stateOrPlayer && stateOrPlayer.player) {
+    // 是 state，用 RiftState 构造 simPlayer
+    player = (typeof RiftState !== 'undefined' && RiftState.buildPlayer) ? RiftState.buildPlayer() : stateOrPlayer.player;
+  }
+
+  // 兜底估算（无 Game 模块时）
   if (typeof Game === 'undefined') {
-    // 简化兜底估算
     return Climb._estimateWinRateSimple(player, monster);
+  }
+
+  // 兜底估算（player 结构不对）
+  if (!player || !player.baseStats) {
+    return Climb._estimateWinRateSimple(player || {}, monster);
   }
 
   const build = Game.aggregateBuild(player);
@@ -496,8 +533,24 @@ Climb._summarizeMoralChoices = function (choices) {
  * @returns {object|null} 分支事件 payload 或 null（未触发）
  */
 Climb.checkBranchEvent = function (state, floor) {
-  const choices = state.moralChoices || [];
-  const summary = Climb._summarizeMoralChoices(choices);
+  // 兼容两种 choices 形态：对象 {destroyed,spared} 或数组 [...]
+  let summary;
+  if (state.choices && typeof state.choices === 'object' && !Array.isArray(state.choices)) {
+    // 对象形态
+    const destroyed = state.choices.destroyed || 0;
+    const spared = state.choices.spared || 0;
+    const total = destroyed + spared;
+    summary = {
+      destroy: destroyed,
+      spare: spared,
+      total,
+      bias: total === 0 ? 'none' : (destroyed >= spared ? 'destroy' : 'spare')
+    };
+  } else {
+    // 数组形态
+    const choices = state.moralChoices || [];
+    summary = Climb._summarizeMoralChoices(choices);
+  }
 
   for (const event of Climb.BRANCH_EVENTS) {
     if (floor !== event.triggerFloor) continue;
