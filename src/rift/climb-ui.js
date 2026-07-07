@@ -132,10 +132,46 @@
     // ============================================================
     function openStartOrContinue() {
       var s = State.load();
+      // 已有未结束爬塔：弹 "继续 / 新开始" 选项
       if (s && s.climb.status === 'running') {
-        openFloor(s.climb.floor);
+        var existingHtml =
+          '<div class="rift-modal-shell">' +
+            '<div class="rift-modal">' +
+              '<h3 class="rift-modal-title">检测到进行中的爬塔</h3>' +
+              '<p class="rift-modal-sub">// 楼层 ' + s.climb.floor + '/35 · ' + statusLabel(s.climb.status) + '</p>' +
+              '<div class="rift-modal-body">' +
+                '上次你选 <b>' + (s.player && s.player.classId ? s.player.classId : '未选择') + '</b>，' +
+                '生命 <b class="rift-num">' + Math.ceil(s.player.hp) + '/' + Math.ceil(s.player.hpMax) + '</b>，' +
+                '金币 <b class="rift-num rift-text-orange">' + s.player.gold + '</b>。<br>' +
+                '你可以继续之前进度，也可以放弃、重新开始。' +
+              '</div>' +
+              '<div class="rift-modal-actions">' +
+                '<button class="rift-btn-primary" id="rift-resume">↻ 继续 · 楼层 ' + s.climb.floor + '</button>' +
+                '<button class="rift-btn-secondary" id="rift-restart">▶ 放弃并重新开始</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+        var eb = document.createElement('div');
+        eb.className = 'rift-modal-shell';
+        eb.innerHTML = existingHtml;
+        document.body.appendChild(eb);
+        eb.querySelector('#rift-resume').onclick = function () {
+          document.body.removeChild(eb);
+          openFloor(s.climb.floor);
+        };
+        eb.querySelector('#rift-restart').onclick = function () {
+          if (!window.confirm('确认放弃当前进度？这会清除已选职业与所有装备。')) return;
+          document.body.removeChild(eb);
+          State.resetRun();
+          showClassPicker();
+        };
         return;
       }
+      // 没有进行中爬塔，直接进职业选择
+      showClassPicker();
+    }
+
+    function showClassPicker() {
 
       var classes = (window.DATA && window.DATA.classes) || [];
       var cards = '';
