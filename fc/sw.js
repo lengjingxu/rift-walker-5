@@ -8,7 +8,7 @@
  * 版本：v1.4 第 4 项
  */
 
-const SW_VERSION = 'diablo-v1.4.4';
+const SW_VERSION = 'diablo-v1.4.5-rift';
 const CACHE_SHELL = `${SW_VERSION}-shell`;
 const CACHE_DATA  = `${SW_VERSION}-data`;
 
@@ -23,6 +23,11 @@ const SHELL_URLS = [
   'ui.js',
   'app.py',
   'offline.html',
+  'rift/state.js',
+  'rift/economy.js',
+  'rift/climb.js',
+  'rift/climb-ui.js',
+  'rift/index.js'
 ];
 
 // 静态数据：极少变，cache-first

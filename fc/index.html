@@ -64,6 +64,7 @@
         <button class="tab" data-tab="craft">CRAFT</button>
         <button class="tab" data-tab="codex">CODEX</button>
         <button class="tab" data-tab="recommend">RECOMMEND</button>
+        <button class="tab" data-tab="climb">CLIMB</button>
       </div>
 
       <!-- 战斗 Tab -->
@@ -228,6 +229,11 @@
           <div id="snapshots-list" class="snapshots-list"></div>
         </div>
       </div>
+
+      <!-- 裂隙行者 5% · CLIMB Tab (v2.0 全新) -->
+      <div id="tab-climb" class="tab-content">
+        <div class="placeholder">// 加载裂隙行者中...</div>
+      </div>
     </section>
 
     <!-- 右：详情/日志 -->
@@ -340,6 +346,19 @@
 <script src="icons.js"></script>
 <script src="game.js"></script>
 <script src="ui.js"></script>
+<script src="rift/state.js"></script>
+<script src="rift/economy.js"></script>
+<script src="rift/climb.js"></script>
+<script src="rift/climb-ui.js"></script>
+<script src="rift/index.js"></script>
+<script>
+  // v2.0 · CLIMB tab 初始化
+  document.addEventListener('DOMContentLoaded', function () {
+    if (window.RiftUI && window.RiftUI.init) window.RiftUI.init();
+  });
+  // 也兼容 defer/async 加载顺序：直接尝试
+  if (window.RiftUI && window.RiftUI.init) window.RiftUI.init();
+</script>
 <script>
   // v1.4 第 4 项 · Service Worker 注册（离线缓存）
   if ('serviceWorker' in navigator) {
