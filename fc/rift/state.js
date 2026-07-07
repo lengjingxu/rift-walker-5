@@ -9,6 +9,7 @@ RiftState.SAVE_KEY = 'rift_walker_save_v1';
 RiftState.MAX_FLOOR = 35;          // Q4 锁定 35 层
 RiftState.ITEM_SLOTS = 10;         // DATA.slots 长度
 RiftState.STATUS = {
+  NONE: 'idle',
   RUNNING: 'running',
   WON: 'won',
   DIED: 'died',
@@ -26,7 +27,7 @@ RiftState.DEFAULT_STATE = function () {
       runId: null,
       floor: 0,
       maxFloor: 0,
-      status: RiftState.STATUS.RUNNING,
+      status: RiftState.STATUS.NONE || 'idle',
       startedAt: null,
       endedAt: null
     },
