@@ -533,3 +533,7 @@ RiftState.CONFIG = {
   classIds: Object.keys(DATA.classes),
   raritySellValues: { normal: 5, magic: 15, rare: 40, unique: 100, set: 80 }
 };
+
+// v2.1 修复：把 RiftState 挂到 window / globalThis，否则 climb-ui.js 拿不到
+if (typeof window !== 'undefined') window.RiftState = RiftState;
+if (typeof globalThis !== 'undefined' && typeof window === 'undefined') globalThis.RiftState = RiftState;

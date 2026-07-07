@@ -708,3 +708,7 @@ if (typeof require !== 'undefined' && require.main === module) {
     if (!cond) throw new Error(`Assertion failed: ${msg}`);
   }
 }
+
+// v2.1 修复：把 Climb 挂到 window
+if (typeof window !== 'undefined') window.Climb = Climb;
+if (typeof globalThis !== 'undefined' && typeof window === 'undefined') globalThis.Climb = Climb;

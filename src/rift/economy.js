@@ -732,3 +732,7 @@ if (typeof module !== 'undefined' && module.exports) {
 
   console.log('\n=== Self-test complete ===\n');
 })();
+
+// v2.1 修复：把 Economy 挂到 window
+if (typeof window !== 'undefined') window.Economy = Economy;
+if (typeof globalThis !== 'undefined' && typeof window === 'undefined') globalThis.Economy = Economy;
