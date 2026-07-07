@@ -1,0 +1,582 @@
+/* ====================================================================
+   裂隙行者 5% · 新美术基线 (v2.1 重做)
+   解决：8-bit 像素 + 中文难读
+   --------------------------------------------------------------------
+   - 不动 src/style.css，老 5 tab 视觉完全保留
+   - 单独 scope 到 #tab-climb 及所有 .rift-* 元素
+   - 字体：通用中文无衬线 + JetBrains Mono 数字 / CJK 字符 fallback
+   - 字号：13-18px 正文（vs 像素 10px）
+   - 配色：高对比（黑底 / 暖橙主 / 红警戒 / 紫电气）
+   ==================================================================== */
+
+:root {
+  --rift-font-zh: -apple-system, BlinkMacSystemFont, "PingFang SC",
+                  "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑",
+                  "Noto Sans CJK SC", "Source Han Sans", sans-serif;
+  --rift-font-num: "JetBrains Mono", "SF Mono", "Menlo", "Consolas", monospace;
+  --rift-font-display: var(--rift-font-zh);
+
+  --rift-bg:        #0a0a0e;
+  --rift-bg-mid:    #14141a;
+  --rift-bg-high:   #1f1f29;
+
+  --rift-fg:        #e8e8ed;
+  --rift-fg-dim:    #7a7a85;
+  --rift-fg-mute:   #4a4a55;
+
+  --rift-orange:    #ff9b3d;
+  --rift-orange-x:  #ffbb66;
+  --rift-red:       #e74c3c;
+  --rift-red-dim:   #7a2820;
+  --rift-cyan:      #5dd5e8;
+  --rift-purple:    #b48ee8;
+  --rift-green:     #4ec97a;
+  --rift-yellow:    #ffd54a;
+
+  --rift-border:    #2a2a36;
+  --rift-border-x:  #4a4a55;
+
+  --rift-radius:    4px;
+  --rift-gap:       14px;
+  --rift-pad:       16px;
+  --rift-line:      1.6;
+}
+
+/* ====================================================================
+   #tab-climb 容器 — 隔离老 CSS 干扰
+   ==================================================================== */
+#tab-climb {
+  display: block;
+  padding: 16px;
+  font-family: var(--rift-font-zh);
+  color: var(--rift-fg);
+  line-height: var(--rift-line);
+  background: var(--rift-bg);
+}
+
+/* 把所有像素字体的下行 hack 全部 reset */
+#tab-climb,
+#tab-climb * {
+  font-family: var(--rift-font-display);
+  text-shadow: none;
+  letter-spacing: 0;
+  word-spacing: 0;
+}
+
+#tab-climb .rift-num {
+  font-family: var(--rift-font-num);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* ====================================================================
+   Header
+   ==================================================================== */
+.rift-header {
+  padding: 0 0 18px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--rift-border);
+}
+
+.rift-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--rift-orange);
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+
+.rift-sub {
+  font-size: 12px;
+  color: var(--rift-fg-dim);
+  margin-top: 6px;
+  font-family: var(--rift-font-num);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+
+/* ====================================================================
+   Status Card
+   ==================================================================== */
+.rift-state {
+  background: var(--rift-bg-mid);
+  border: 1px solid var(--rift-border);
+  border-radius: var(--rift-radius);
+  padding: 14px 16px;
+  margin: 14px 0;
+  font-size: 14px;
+}
+.rift-state.running   { border-left: 4px solid var(--rift-orange); }
+.rift-state.won       { border-left: 4px solid var(--rift-green); }
+.rift-state.died      { border-left: 4px solid var(--rift-red); }
+.rift-state.retreated { border-left: 4px solid var(--rift-fg-dim); }
+
+.rs-row {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 4px 0;
+  align-items: baseline;
+}
+.rs-row + .rs-row { border-top: 1px dashed var(--rift-border); margin-top: 6px; padding-top: 10px; }
+
+.rs-label {
+  color: var(--rift-fg-dim);
+  font-size: 12px;
+  min-width: 50px;
+}
+.rs-val {
+  color: var(--rift-fg);
+  font-weight: 600;
+  margin-right: 6px;
+  font-size: 15px;
+}
+.rs-val.rs-num {
+  font-family: var(--rift-font-num);
+  color: var(--rift-orange-x);
+}
+
+/* ====================================================================
+   Action Buttons
+   ==================================================================== */
+.rift-actions {
+  margin: 18px 0;
+}
+
+.rift-btn-primary,
+.rift-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: var(--rift-radius);
+  cursor: pointer;
+  transition: background 80ms, transform 80ms, border-color 80ms;
+  user-select: none;
+  font-family: var(--rift-font-zh);
+  min-width: 200px;
+}
+.rift-btn-primary {
+  background: var(--rift-orange);
+  color: #1a1108;
+  border: 2px solid var(--rift-orange-x);
+}
+.rift-btn-primary:hover {
+  background: var(--rift-orange-x);
+}
+.rift-btn-primary:active {
+  transform: translateY(1px);
+}
+.rift-btn-primary:disabled {
+  background: var(--rift-bg-high);
+  color: var(--rift-fg-mute);
+  border-color: var(--rift-border);
+  cursor: not-allowed;
+}
+.rift-btn-secondary {
+  background: transparent;
+  color: var(--rift-fg-dim);
+  border: 2px solid var(--rift-border-x);
+}
+.rift-btn-secondary:hover {
+  border-color: var(--rift-orange);
+  color: var(--rift-fg);
+}
+
+/* ====================================================================
+   Modal Layer
+   ==================================================================== */
+.rift-modal-shell {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.82);
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.rift-modal {
+  background: var(--rift-bg-mid);
+  border: 1px solid var(--rift-border-x);
+  border-radius: 8px;
+  padding: 28px;
+  max-width: 560px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.rift-modal-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--rift-orange);
+  margin: 0 0 4px;
+}
+.rift-modal-sub {
+  font-size: 13px;
+  color: var(--rift-fg-dim);
+  margin: 0 0 18px;
+  font-family: var(--rift-font-num);
+  letter-spacing: 0.03em;
+}
+.rift-modal-body {
+  font-size: 14px;
+  color: var(--rift-fg);
+  margin: 12px 0 18px;
+}
+.rift-modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+/* ====================================================================
+   Class Picker (新爬塔时)
+   ==================================================================== */
+.rift-class-picker {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin: 14px 0;
+}
+.rift-class-card {
+  background: var(--rift-bg-high);
+  border: 2px solid var(--rift-border);
+  padding: 12px;
+  border-radius: var(--rift-radius);
+  cursor: pointer;
+  transition: all 80ms;
+}
+.rift-class-card:hover {
+  border-color: var(--rift-orange);
+}
+.rift-class-card.selected {
+  border-color: var(--rift-orange-x);
+  background: rgba(255, 155, 61, 0.15);
+}
+.rift-class-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--rift-orange-x);
+  margin-bottom: 4px;
+}
+.rift-class-prototype {
+  font-size: 12px;
+  color: var(--rift-cyan);
+  margin-bottom: 6px;
+  font-style: italic;
+}
+.rift-class-skill {
+  font-size: 11px;
+  color: var(--rift-fg-dim);
+  line-height: 1.5;
+}
+
+.rift-pick-label {
+  font-size: 13px;
+  color: var(--rift-fg-dim);
+  display: block;
+  margin-bottom: 6px;
+}
+.rift-select {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--rift-bg-high);
+  color: var(--rift-fg);
+  border: 1px solid var(--rift-border-x);
+  border-radius: var(--rift-radius);
+  font-family: var(--rift-font-zh);
+  font-size: 14px;
+  margin-bottom: 14px;
+}
+
+/* ====================================================================
+   Monster Card (单层)
+   ==================================================================== */
+.rift-monster-card {
+  background: var(--rift-bg-high);
+  border: 2px solid var(--rift-border);
+  padding: 16px;
+  border-radius: var(--rift-radius);
+  margin: 14px 0;
+}
+.rift-monster-card.rift-tier-boss {
+  border-color: var(--rift-red);
+  background: linear-gradient(180deg, rgba(231, 76, 60, 0.10) 0%, transparent 100%);
+  position: relative;
+}
+.rift-monster-card.rift-tier-boss::before {
+  content: "⚠ BOSS GATE";
+  position: absolute;
+  top: -10px;
+  left: 12px;
+  background: var(--rift-red);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 3px;
+  letter-spacing: 0.05em;
+}
+.rift-monster-card.rift-tier-elite {
+  border-color: var(--rift-purple);
+}
+.rift-monster-card.rift-tier-normal {
+  border-color: var(--rift-border-x);
+}
+
+.rift-monster-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--rift-orange-x);
+  margin-bottom: 4px;
+}
+.rift-monster-card.rift-tier-boss .rift-monster-name {
+  color: var(--rift-red);
+  text-shadow: 0 0 18px rgba(231,76,60,0.4);
+}
+
+.rift-monster-tag {
+  display: inline-block;
+  font-size: 11px;
+  color: var(--rift-bg);
+  background: var(--rift-fg-dim);
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-right: 6px;
+  font-weight: 600;
+}
+.rift-monster-tag.boss  { background: var(--rift-red);   color: #fff; }
+.rift-monster-tag.elite { background: var(--rift-purple); color: #fff; }
+
+.rift-monster-stat {
+  display: grid;
+  grid-template-columns: 56px 1fr 56px 1fr 56px 1fr 56px 1fr;
+  gap: 4px 12px;
+  font-size: 14px;
+  margin-top: 12px;
+  align-items: baseline;
+}
+.rift-monster-stat .lbl {
+  color: var(--rift-fg-dim);
+  font-size: 12px;
+  text-align: right;
+}
+.rift-monster-stat .val {
+  color: var(--rift-fg);
+  font-family: var(--rift-font-num);
+  font-size: 16px;
+  font-weight: 700;
+}
+.rift-monster-stat .val.danger { color: var(--rift-red); }
+.rift-monster-stat .val.warn   { color: var(--rift-yellow); }
+.rift-monster-stat .val.good   { color: var(--rift-green); }
+
+/* ====================================================================
+   Win% Bar
+   ==================================================================== */
+.rift-win-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--rift-bg);
+  border: 1px solid var(--rift-border);
+  border-radius: var(--rift-radius);
+  margin: 10px 0;
+}
+.rift-win-label {
+  font-size: 12px;
+  color: var(--rift-fg-dim);
+  letter-spacing: 0.05em;
+}
+.rift-win-pct {
+  font-family: var(--rift-font-num);
+  font-size: 22px;
+  font-weight: 700;
+  margin-left: auto;
+}
+.rift-win-pct.good { color: var(--rift-green); }
+.rift-win-pct.warn { color: var(--rift-yellow); }
+.rift-win-pct.bad  { color: var(--rift-red); }
+
+.rift-win-track {
+  flex: 1;
+  height: 6px;
+  background: var(--rift-bg-high);
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 0 10px;
+}
+.rift-win-fill {
+  height: 100%;
+  transition: width 200ms;
+}
+.rift-win-fill.good { background: var(--rift-green); }
+.rift-win-fill.warn { background: var(--rift-yellow); }
+.rift-win-fill.bad  { background: var(--rift-red); }
+
+/* ====================================================================
+   Loot / Death Modal
+   ==================================================================== */
+.rift-loot {
+  width: 100%;
+  margin: 16px 0;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+.rift-loot th {
+  text-align: left;
+  color: var(--rift-fg-dim);
+  font-weight: normal;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rift-border);
+}
+.rift-loot td {
+  padding: 12px 0;
+  vertical-align: top;
+}
+.rift-loot td + td {
+  border-left: 1px solid var(--rift-border);
+  padding-left: 16px;
+}
+.rift-brought {
+  color: var(--rift-green);
+  font-size: 28px;
+  font-weight: 700;
+  font-family: var(--rift-font-num);
+}
+.rift-lost {
+  color: var(--rift-red);
+  font-size: 28px;
+  font-weight: 700;
+  font-family: var(--rift-font-num);
+}
+.rift-loot-foot {
+  font-size: 12px;
+  color: var(--rift-fg-dim);
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--rift-border);
+}
+
+/* ====================================================================
+   Meta Layer (终局翻转为真照片风)
+   ==================================================================== */
+.rift-meta-layer {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 9900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+}
+.rift-meta-glitch {
+  font-family: var(--rift-font-num);
+  animation: rift-glitch 1.6s steps(2) infinite;
+  max-width: 600px;
+}
+.rift-meta-text {
+  color: #ff66ff;
+  font-size: 18px;
+  line-height: 2;
+  letter-spacing: 0.05em;
+  text-shadow: 0 0 6px rgba(255, 102, 255, 0.4);
+}
+@keyframes rift-glitch {
+  0%   { transform: translate(0,0);   filter: hue-rotate(0deg); }
+  25%  { transform: translate(-2px,1px); filter: hue-rotate(60deg); }
+  50%  { transform: translate(1px,-1px); filter: hue-rotate(180deg); }
+  75%  { transform: translate(-1px,1px); filter: hue-rotate(300deg); }
+  100% { transform: translate(0,0); }
+}
+
+/* ====================================================================
+   DEBUG Widget
+   ==================================================================== */
+#rift-debug-widget {
+  position: fixed;
+  bottom: 12px;
+  right: 12px;
+  z-index: 99999;
+  background: rgba(10, 10, 14, 0.94);
+  color: var(--rift-orange-x);
+  border: 1px solid var(--rift-orange);
+  border-radius: var(--rift-radius);
+  padding: 10px 14px;
+  font: 12px/1.5 var(--rift-font-num);
+  cursor: move;
+  user-select: none;
+  max-width: 320px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+/* ====================================================================
+   Game 决策 modal — Boss moral choice 双重选择
+   ==================================================================== */
+.rift-choice-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 16px;
+}
+.rift-choice {
+  background: var(--rift-bg-high);
+  border: 2px solid var(--rift-border-x);
+  border-radius: var(--rift-radius);
+  padding: 14px;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--rift-font-zh);
+  font-size: 14px;
+  color: var(--rift-fg);
+  line-height: 1.6;
+  transition: all 80ms;
+}
+.rift-choice:hover { border-color: var(--rift-orange); background: rgba(255, 155, 61, 0.06); }
+.rift-choice.danger { border-color: var(--rift-red-dim); }
+.rift-choice.danger:hover { border-color: var(--rift-red); background: rgba(231, 76, 60, 0.08); }
+.rift-choice .ch-label {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--rift-orange-x);
+  margin-bottom: 8px;
+  letter-spacing: 0.03em;
+}
+.rift-choice.danger .ch-label { color: var(--rift-red); }
+.rift-choice .ch-desc {
+  font-size: 13px;
+  color: var(--rift-fg-dim);
+  line-height: 1.6;
+}
+
+/* ====================================================================
+   Small util
+   ==================================================================== */
+.rift-row { display: flex; gap: 14px; align-items: center; }
+.rift-row.rift-row-end { justify-content: flex-end; }
+.rift-col { display: flex; flex-direction: column; gap: 10px; }
+.rift-divider { border: 0; border-top: 1px solid var(--rift-border); margin: 18px 0; }
+.rift-mt { margin-top: 14px; }
+.rift-mb { margin-bottom: 14px; }
+.rift-text-dim { color: var(--rift-fg-dim); }
+.rift-text-orange { color: var(--rift-orange-x); }
+.rift-text-red { color: var(--rift-red); }
+.rift-text-green { color: var(--rift-green); }
+.rift-text-cyan { color: var(--rift-cyan); }
+.rift-center { text-align: center; }
+.rift-mono { font-family: var(--rift-font-num); }

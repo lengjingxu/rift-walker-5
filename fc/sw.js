@@ -8,7 +8,7 @@
  * 版本：v1.4 第 4 项
  */
 
-const SW_VERSION = 'diablo-v1.4.5-rift';
+const SW_VERSION = 'diablo-v1.4.6-rift-ui';
 const CACHE_SHELL = `${SW_VERSION}-shell`;
 const CACHE_DATA  = `${SW_VERSION}-data`;
 
@@ -17,6 +17,7 @@ const SHELL_URLS = [
   './',
   'index.html',
   'style.css',
+  'rift/style.css',
   'data.js',
   'icons.js',
   'game.js',
