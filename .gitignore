@@ -1,0 +1,26 @@
+# 依赖
+node_modules/
+package-lock.json
+
+# FC 部署
+.fc-tmp/
+__pycache__/
+*.pyc
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# 临时
+*.log
+.cache/
+.tmp/
+
+# 测试输出
+test-output/
+coverage/
+
+# 我们自己维护的（不忽略）
+# DESIGN.md, PLAN.md, ROADMAP.md, STORY.md, ITERATION_LOG.md, src/, fc/, tests/ 都提交

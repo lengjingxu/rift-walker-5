@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DIABLO · 离线</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  body {
+    margin: 0;
+    background: #0a0a0a;
+    color: #e8d8a8;
+    font-family: 'VT323', 'Press Start 2P', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    text-align: center;
+  }
+  .icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+    image-rendering: pixelated;
+    animation: blink 1.2s infinite;
+  }
+  h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 18px;
+    color: #c92a2a;
+    margin: 0 0 16px;
+    letter-spacing: 2px;
+  }
+  p {
+    font-size: 22px;
+    line-height: 1.5;
+    margin: 8px 0;
+    color: #e8d8a8;
+  }
+  .hint {
+    margin-top: 24px;
+    padding: 16px;
+    border: 2px dashed #6b6b3b;
+    font-size: 18px;
+    color: #c8c878;
+    max-width: 480px;
+  }
+  .retry {
+    margin-top: 24px;
+    padding: 12px 24px;
+    background: #2a1a0a;
+    border: 2px solid #c8a878;
+    color: #e8d8a8;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .retry:active {
+    background: #4a2a1a;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+</style>
+</head>
+<body>
+  <div class="icon">⚔</div>
+  <h1>OFFLINE</h1>
+  <p>你的网络连接断了。</p>
+  <p>暗黑出装系统需要在线才能首次加载。</p>
+  <p>连接恢复后，点击重试：</p>
+  <button class="retry" onclick="location.reload()">[ RETRY ]</button>
+  <div class="hint">
+    // 提示：第一次访问会自动缓存所有资源，<br>
+    // 之后即使断网也能继续游玩。<br>
+    // 若断网前未访问过，请连上网络重试。
+  </div>
+</body>
+</html>

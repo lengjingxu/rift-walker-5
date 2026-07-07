@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DIABLO · 出装系统</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script>
+  // 动态 base href — 兼容 FC 自定义域名路径
+  (function () {
+    var p = window.location.pathname;
+    var m = p.match(/^(\/ai\/[^\/]+)/);
+    document.write('<base href="' + (m ? m[1] + '/' : '/') + '">');
+  })();
+</script>
+</head>
+<body>
+<div id="app">
+
+  <!-- 顶部状态栏 -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-icon" id="brand-sword"></span>
+      <span class="brand-name">DIABLO</span>
+      <span class="brand-sub">· OUTFIT</span>
+    </div>
+    <div class="status">
+      <span class="status-item" id="status-class-wrap">Lv.<b id="ui-level">1</b> <span id="ui-class">野蛮人</span></span>
+      <span class="status-item" id="status-gold-wrap">$<b id="ui-gold">0</b></span>
+      <span class="status-item" id="status-exp-wrap">XP <b id="ui-exp">0</b>/<b id="ui-exp-max">100</b></span>
+      <span class="status-item" id="ui-dps">DPS <b>0</b></span>
+    </div>
+    <div class="actions">
+      <span class="sw-badge" id="sw-badge" title="Service Worker 离线缓存状态">⚡ ONLINE</span>
+      <button class="btn-icon" id="btn-mute" title="切换音效">🔊</button>
+      <button class="btn-icon" id="btn-save" title="保存">$</button>
+      <button class="btn-icon" id="btn-reset" title="重置">R</button>
+    </div>
+  </header>
+
+  <!-- 主体 -->
+  <main class="main">
+
+    <!-- 左：角色 + 装备 -->
+    <section class="panel panel-left">
+      <div class="panel-title">HERO</div>
+      <div id="character-panel"></div>
+
+      <div class="panel-title">EQUIPMENT</div>
+      <div id="equipment-grid" class="equip-grid"></div>
+
+      <div class="panel-title">SET BONUS</div>
+      <div id="set-list" class="set-list"></div>
+    </section>
+
+    <!-- 中：战斗 / 背包 / 打造 / 图鉴 -->
+    <section class="panel panel-center">
+      <div class="tabs">
+        <button class="tab active" data-tab="battle">BATTLE</button>
+        <button class="tab" data-tab="inventory">BAG</button>
+        <button class="tab" data-tab="craft">CRAFT</button>
+        <button class="tab" data-tab="codex">CODEX</button>
+        <button class="tab" data-tab="recommend">RECOMMEND</button>
+      </div>
+
+      <!-- 战斗 Tab -->
+      <div id="tab-battle" class="tab-content active">
+        <div class="battle-monster-picker">
+          <div class="sub-title">// SELECT TARGET</div>
+          <div id="monster-list" class="monster-list"></div>
+          <!-- v1.4 第 2 项 · 战斗模拟预计算缓存统计 -->
+          <div class="battle-cache-stats" id="battle-cache-stats">
+            <span class="bcs-label">CACHE:</span>
+            <span class="bcs-key" id="bcs-sig">—</span>
+            <span class="bcs-stat" id="bcs-builds">builds: 0</span>
+            <span class="bcs-stat" id="bcs-battles">battles: 0</span>
+            <span class="bcs-stat" id="bcs-hits">hits: 0</span>
+            <span class="bcs-stat" id="bcs-miss">miss: 0</span>
+            <span class="bcs-stat" id="bcs-inv">inv: 0</span>
+            <button class="bcs-clear" id="bcs-clear" title="Clear cache">CLEAR</button>
+          </div>
+        </div>
+        <div class="battle-result" id="battle-result">
+          <div class="placeholder">// CLICK MONSTER TO START</div>
+        </div>
+        <div class="battle-replay-actions" id="battle-replay-actions" style="display:none;">
+          <button class="btn-tiny" id="btn-open-replay" title="回放这场战斗的 ticks 时间线">▶ REPLAY</button>
+          <span class="replay-hint" id="replay-hint">回放 ticks 时间线（v1.5 第 2 项）</span>
+        </div>
+        <div class="battle-log" id="battle-log"></div>
+      </div>
+
+      <!-- 背包 Tab -->
+      <div id="tab-inventory" class="tab-content">
+        <div class="inv-toolbar">
+          <label>RARITY:</label>
+          <select id="filter-rarity">
+            <option value="all">ALL</option>
+            <option value="normal">NORMAL</option>
+            <option value="magic">MAGIC</option>
+            <option value="rare">RARE</option>
+            <option value="unique">UNIQUE</option>
+            <option value="set">SET</option>
+          </select>
+          <label>SLOT:</label>
+          <select id="filter-slot">
+            <option value="all">ALL</option>
+          </select>
+          <button class="btn-small" id="btn-sort">SORT</button>
+          <button class="btn-small" id="btn-sell-junk">SELL JUNK</button>
+        </div>
+        <div id="inventory-virtual-stats" class="inv-virtual-stats" style="display:none">
+          <span class="inv-virtual-mode">⚡ VIRTUAL MODE</span>
+          <span><span class="inv-virtual-count" id="inv-virtual-shown">0</span> / <span id="inv-virtual-total">0</span> shown</span>
+        </div>
+        <div id="inventory-grid" class="inventory-grid"></div>
+      </div>
+
+      <!-- 打造 Tab -->
+      <div id="tab-craft" class="tab-content">
+        <div class="craft-area">
+          <div class="sub-title">// FORGE NEW ITEM</div>
+          <div class="craft-options">
+            <label>LV:<input type="number" id="craft-level" min="1" max="80" value="20"></label>
+            <label>RARITY:
+              <select id="craft-rarity">
+                <option value="random">RANDOM</option>
+                <option value="magic">MAGIC</option>
+                <option value="rare">RARE</option>
+                <option value="unique">UNIQUE</option>
+                <option value="set">SET</option>
+              </select>
+            </label>
+            <label>SLOT:
+              <select id="craft-slot">
+                <option value="random">RANDOM</option>
+              </select>
+            </label>
+            <button class="btn-primary" id="btn-craft">FORGE · 50G</button>
+          </div>
+          <div class="craft-result" id="craft-result">
+            <div class="placeholder" style="margin:0; padding: 16px;">// CRAFTED ITEM APPEARS HERE</div>
+          </div>
+        </div>
+
+        <!-- 配方 Tab v1.2：材料 → 装备 -->
+        <div class="recipe-area">
+          <div class="sub-title">// RECIPES · MATERIAL → EQUIPMENT (v1.2)</div>
+          <div class="recipe-info">消耗指定附魔材料 + 金币 → 锁定 slot + rarity 的装备（区别于上方纯 RNG 打造）</div>
+          <div id="recipe-list" class="recipe-grid"></div>
+        </div>
+
+        <div class="upgrade-area">
+          <div class="sub-title">// UPGRADE +5% STATS · 100G</div>
+          <div class="upgrade-info">SELECT ITEM IN BAG TO UPGRADE</div>
+          <div id="upgrade-target-info" class="placeholder">NO TARGET</div>
+        </div>
+      </div>
+
+      <!-- 图鉴 Tab -->
+      <div id="tab-codex" class="tab-content">
+        <div class="codex-section">
+          <div class="sub-title">// MONSTER CODEX · 13 怪 · 含掉落表 <span class="codex-filter-bar"><button class="codex-filter active" data-mf="all">ALL</button><button class="codex-filter" data-mf="normal">普通</button><button class="codex-filter" data-mf="elite">精英</button><button class="codex-filter" data-mf="boss">Boss</button><button class="codex-filter" data-mf="hidden">隐藏</button></span></div>
+          <div id="codex-monster" class="codex-monster-grid"></div>
+        </div>
+        <div class="codex-section">
+          <div class="sub-title">// UNIQUE ITEMS</div>
+          <div id="codex-unique" class="codex-grid"></div>
+        </div>
+        <div class="codex-section">
+          <div class="sub-title">// SET ITEMS</div>
+          <div id="codex-set" class="codex-grid"></div>
+        </div>
+      </div>
+
+      <!-- 推荐器 Tab (v1.1) -->
+      <div id="tab-recommend" class="tab-content">
+        <div class="sub-title">// BUILD RECOMMENDER · v1.1</div>
+        <div class="recommend-intro" style="font-size: 12px; color: var(--text-dim); font-style: italic; margin: 8px 0 16px; padding: 8px; background: var(--bg-black); border-left: 3px solid var(--gold-bright);">
+          // 按职业 × 流派算法推荐最优装备搭配 · 3 个流派：⚔ DPS / 🛡 坦克 / ⚖ 平衡<br>
+          // 点击「应用」一键装备到角色，并保留原有背包物品
+        </div>
+        <div class="recommend-class-pick">
+          <label style="color: var(--text-dim); font-size: 11px; margin-right: 8px;">// 选择职业:</label>
+          <select id="recommend-class" class="recommend-select"></select>
+          <label style="color: var(--text-dim); font-size: 11px; margin-left: 12px; margin-right: 8px;">// 等级:</label>
+          <input type="number" id="recommend-level" class="recommend-input" min="1" max="80" value="20">
+        </div>
+        <div id="recommend-cards" class="recommend-cards"></div>
+        <div id="recommend-detail" class="recommend-detail"></div>
+
+        <!-- v1.1 · Build 导出/导入 -->
+        <div class="build-export-import" style="margin-top: 24px; padding-top: 16px; border-top: 1px dashed var(--text-dim);">
+          <div class="sub-title" style="font-size: 12px; margin-bottom: 8px;">// BUILD SHARE · v1.1</div>
+          <div class="build-export-intro" style="font-size: 11px; color: var(--text-dim); font-style: italic; margin-bottom: 12px;">
+            // 一键导出当前 build 为文本/短码，分享给朋友；或导入他人的 build
+          </div>
+          <div class="build-export-actions" style="display: flex; gap: 8px;">
+            <button class="btn-primary" id="btn-export" style="flex: 1; padding: 10px; font-size: 12px;">📤 EXPORT BUILD</button>
+            <button class="btn-primary" id="btn-import" style="flex: 1; padding: 10px; font-size: 12px;">📥 IMPORT BUILD</button>
+          </div>
+        </div>
+
+        <!-- v1.1 · Build 历史快照 -->
+        <div class="snapshots-panel" style="margin-top: 24px; padding-top: 16px; border-top: 1px dashed var(--text-dim);">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <div class="sub-title" style="font-size: 12px;">// BUILD SNAPSHOTS · v1.1</div>
+            <div id="snapshots-count" style="font-size: 10px; color: var(--text-dim); padding: 2px 8px; background: var(--bg-black); border: 1px solid var(--text-dim);">0/10</div>
+          </div>
+          <div class="snapshots-intro" style="font-size: 11px; color: var(--text-dim); font-style: italic; margin-bottom: 12px;">
+            // 装备变化、应用推荐、导入他人 build 时自动保存最近 10 套 · 可一键还原 / 重命名 / 删除 · <span style="color:#b8860b;">📌 ☆</span> 收藏夹置顶 (v1.6) · <span style="color:#c4a000;">⚖ VS</span> 可对比两条快照 (v1.5) · <span style="color:#7a9b3e;">📝</span> 备注要点 (v1.6)
+          </div>
+          <div class="snapshots-actions" style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <button class="btn-primary" id="btn-snapshot-save" style="flex: 1; padding: 8px; font-size: 11px;">📸 SAVE CURRENT</button>
+            <button class="btn-small" id="btn-snapshot-clear" style="flex: 1; padding: 8px; font-size: 11px;">🗑 CLEAR ALL</button>
+          </div>
+          <!-- v1.5 第 3 项 · 职业过滤器（配合跨职业对比） -->
+          <div class="snapshots-filter-bar">
+            <label class="snapshots-filter-label" for="snapshot-class-filter">职业筛选 · v1.5</label>
+            <select id="snapshot-class-filter" class="snapshots-filter-select">
+              <option value="all" selected>// 全部职业 · ALL CLASSES</option>
+            </select>
+            <span id="snapshot-crossclass-hint" class="snapshot-crossclass-hint" style="display:none;">⚠ 跨职业对比</span>
+          </div>
+          <div id="snapshots-list" class="snapshots-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 右：详情/日志 -->
+    <section class="panel panel-right">
+      <div class="panel-title">ITEM INFO</div>
+      <div id="item-detail" class="item-detail">
+        <div class="placeholder">SELECT ITEM</div>
+      </div>
+
+      <div class="panel-title">SYSTEM LOG</div>
+      <div class="log-toolbar">
+        <div class="log-filters" id="log-filters">
+          <button class="log-filter active" data-filter="all" title="全部日志">ALL</button>
+          <button class="log-filter" data-filter="epic" title="史诗级事件">⚔</button>
+          <button class="log-filter" data-filter="good" title="成功 / 收益">✓</button>
+          <button class="log-filter" data-filter="bad" title="失败 / 错误">✗</button>
+          <button class="log-filter" data-filter="info" title="系统消息">i</button>
+        </div>
+        <span class="log-count" id="log-count">0</span>
+        <button class="log-clear" id="log-clear" title="清空日志">✕</button>
+      </div>
+      <div id="system-log" class="system-log"></div>
+    </section>
+  </main>
+
+  <!-- 浮动提示 -->
+  <div id="tooltip" class="tooltip" style="display:none"></div>
+</div>
+
+<!-- v1.3 · 新手引导（3 步教程 · 首次进入显示，localStorage 持久化）-->
+<div id="tutorial-overlay" class="tutorial-overlay" style="display:none">
+  <div class="tutorial-spotlight" id="tutorial-spotlight"></div>
+  <div class="tutorial-card">
+    <div class="tutorial-header">
+      <span class="tutorial-step" id="tutorial-step">STEP 1/3</span>
+      <button class="tutorial-close" id="tutorial-close">[ SKIP ]</button>
+    </div>
+    <div class="tutorial-icon" id="tutorial-icon">⚔</div>
+    <div class="tutorial-title" id="tutorial-title">选择怪物</div>
+    <div class="tutorial-desc" id="tutorial-desc">在下方怪物列表中选择一个怪物卡点击，开始你的第一次战斗。</div>
+    <div class="tutorial-target-hint" id="tutorial-target-hint">👇 点击下方任何怪物卡</div>
+    <div class="tutorial-actions">
+      <button class="btn-small tutorial-prev" id="tutorial-prev" style="visibility:hidden">◂ BACK</button>
+      <span class="tutorial-dots" id="tutorial-dots"></span>
+      <button class="btn-primary tutorial-next" id="tutorial-next">NEXT ▸</button>
+    </div>
+  </div>
+</div>
+
+<!-- 开场叙事幕 -->
+<div id="intro-screen" class="intro-screen" style="display:none">
+  <div class="intro-content">
+    <div class="intro-title">DIABLO</div>
+    <div class="intro-sub">// DIGITAL APOCALYPSE · 2147</div>
+    <pre class="intro-text" id="intro-text"></pre>
+    <button class="btn-primary intro-btn" id="intro-enter">▸ ENTER THE ABYSS</button>
+    <button class="btn-small intro-skip" id="intro-skip">[ SKIP ]</button>
+  </div>
+</div>
+
+<!-- 怪物档案 modal -->
+<div id="lore-modal" class="lore-modal" style="display:none">
+  <div class="lore-content">
+    <div class="lore-header">
+      <div id="lore-sprite"></div>
+      <div>
+        <div class="lore-name" id="lore-name"></div>
+        <div class="lore-sub" id="lore-sub"></div>
+      </div>
+    </div>
+    <pre class="lore-body" id="lore-body"></pre>
+    <button class="btn-primary" id="lore-fight">⚔ FIGHT</button>
+    <button class="btn-small" id="lore-close">[ CLOSE ]</button>
+  </div>
+</div>
+
+<!-- v1.1 · Build 导出 modal -->
+<div id="export-modal" class="build-modal" style="display:none">
+  <div class="lore-content">
+    <div class="lore-name">📤 EXPORT BUILD</div>
+    <div class="lore-sub">// 复制下面的文本 / 短码分享给朋友</div>
+    <div style="margin: 12px 0;">
+      <div style="color: var(--text-dim); font-size: 11px; margin-bottom: 4px;">// 短码（DB:xxxx... 不可导入）:</div>
+      <div id="export-shortcode" class="lore-body" style="font-size: 12px; padding: 8px; background: var(--bg-black); border: 1px solid var(--text-dim); min-height: 24px; word-break: break-all; color: var(--gold-bright);">DB:...</div>
+    </div>
+    <div style="margin: 12px 0;">
+      <div style="color: var(--text-dim); font-size: 11px; margin-bottom: 4px;">// 完整文本（可导入）:</div>
+      <textarea id="export-textarea" readonly style="width: 100%; min-height: 120px; font-family: 'Courier New', monospace; font-size: 10px; background: var(--bg-black); color: var(--text); border: 1px solid var(--text-dim); padding: 8px; resize: vertical;"></textarea>
+    </div>
+    <button class="btn-primary" id="export-copy">📋 COPY TEXT</button>
+    <button class="btn-small" id="export-close">[ CLOSE ]</button>
+  </div>
+</div>
+
+<!-- v1.1 · Build 导入 modal -->
+<div id="import-modal" class="build-modal" style="display:none">
+  <div class="lore-content">
+    <div class="lore-name">📥 IMPORT BUILD</div>
+    <div class="lore-sub">// 粘贴他人的 build 文本（短码不可导入）</div>
+    <div style="margin: 12px 0;">
+      <div style="color: var(--text-dim); font-size: 11px; margin-bottom: 4px;">// 警告：导入会覆盖当前装备（但旧装备会保留到背包）</div>
+      <textarea id="import-textarea" placeholder="粘贴 build 文本..." style="width: 100%; min-height: 120px; font-family: 'Courier New', monospace; font-size: 10px; background: var(--bg-black); color: var(--text); border: 1px solid var(--text-dim); padding: 8px; resize: vertical;"></textarea>
+    </div>
+    <button class="btn-primary" id="import-confirm">✓ CONFIRM IMPORT</button>
+    <button class="btn-small" id="import-close">[ CANCEL ]</button>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="icons.js"></script>
+<script src="game.js"></script>
+<script src="ui.js"></script>
+<script>
+  // v1.4 第 4 项 · Service Worker 注册（离线缓存）
+  if ('serviceWorker' in navigator) {
+    // 使用相对路径，自动适配 FC PATH_PREFIX
+    var swUrl = 'sw.js';
+    // 延迟注册：避免阻塞首屏
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register(swUrl, { scope: './' }).then(function (reg) {
+        console.log('[Diablo] Service Worker registered, scope:', reg.scope);
+      }).catch(function (err) {
+        console.warn('[Diablo] Service Worker registration failed:', err);
+      });
+    });
+  }
+</script>
+</body>
+</html>
