@@ -379,9 +379,13 @@ RiftState.calcPlayerEHP = function () {
   return Game.calcEffectiveHP(build);
 };
 
-// simulateRiftBattle(monster) → 调用 Game.simulateBattle(buildPlayer, monster)
+// simulateRiftBattle(monster) → 走 RiftBattle 开放 tick 战斗，Game 兜底
 RiftState.simulateRiftBattle = function (monster) {
   const build = RiftState.buildPlayer();
+  if (typeof RiftBattle !== 'undefined' && RiftBattle.simulateBattle) {
+    return RiftBattle.simulateBattle(build, monster);
+  }
+  // 兜底：用旧 Game.simulateBattle（兼容 CI / 单元测试）
   return Game.simulateBattle(build, monster);
 };
 

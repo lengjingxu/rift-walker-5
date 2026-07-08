@@ -6,6 +6,7 @@
 //   <script src="data.js"></script>
 //   <script src="game.js"></script>
 //   <script src="rift/state.js"></script>
+//   <script src="rift/battle.js"></script>
 //   <script src="rift/economy.js"></script>
 //   <script src="rift/climb.js"></script>
 //   <script src="rift/index.js"></script>
@@ -20,12 +21,14 @@
   if (typeof window.RiftState === 'undefined') window.RiftState = window.RiftState || {};
   if (typeof window.Economy === 'undefined')    window.Economy    = window.Economy    || {};
   if (typeof window.Climb === 'undefined')      window.Climb      = window.Climb      || {};
+  if (typeof window.RiftBattle === 'undefined') window.RiftBattle = window.RiftBattle || {};
   if (typeof window.Game === 'undefined')       window.Game       = window.Game       || {};
 
   window.Rift = {
     State:   window.RiftState,
     Economy: window.Economy,
     Climb:   window.Climb,
+    Battle:  window.RiftBattle,
     Game:    window.Game,
     Rest:    window.Rest,
     version: '2.1.0',
