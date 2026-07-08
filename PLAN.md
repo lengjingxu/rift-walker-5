@@ -13,7 +13,7 @@
 - [x] **T1.2** `src/rift/climb.js` —— 主循环（层 → 战斗 → 决策 → 继续/撤退 modal）
 - [x] **T1.3** `src/rift/rest.js` —— 休息站 UI（换装 / 升级 / 融入三个 tab）
 - [x] **T1.4** `src/rift/economy.js` —— 金币 / 血瓶 / 卖出 / 兑换
-- [ ] **T1.5** `src/rift/battle.js` —— `simulateBattle` 改开放式 tick 战斗
+- [x] **T1.5** `src/rift/battle.js` —— `simulateBattle` 改开放式 tick 战斗
 - [ ] **T1.6** 60 怪列表扩展（基于现有 13 怪 + 自动难度曲线 47 怪）
 - [x] **T1.7** 7 boss 列表 + boss gate 检测
 
