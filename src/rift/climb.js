@@ -420,6 +420,71 @@ Climb._getSpareText = (bossId, bossInfo) =>
   Climb._SPARE_TEXTS[bossId] || `不伤 ${bossInfo.name}。这是人性的选择。`;
 
 // ============================================================
+// 4b. showBrineGateModal(state, floor) → 血瓶带入决策 modal payload (T2.1)
+// ============================================================
+
+/**
+ * T2.1 血瓶带入决策：每 10 层强制 modal，玩家必须选择如何处理下个 boss 战的血瓶策略。
+ *
+ * 三选项：
+ *   - bring: 从 stash 消耗 1 个血瓶（强制补 1 个，无论选什么）
+ *   - free:  免费拿 1 个新血瓶（floor 10/20/30 自动补给）
+ *   - skip:  跳过（下个 boss 战无血瓶可用，HP 损失风险上升）
+ *
+ * @param {object} state - 爬塔 state
+ * @param {number} floor - 当前层（10 / 20 / 30）
+ * @returns {object} modal payload
+ */
+Climb.showBrineGateModal = function (state, floor) {
+  const player = state.player || {};
+  const brinesStash = (player.brines || []).reduce((sum, b) => sum + (b.amount || 0), 0);
+  const nextBossFloor = floor + 5; // 10→15, 20→25, 30→35
+  const hp = player.hp || 0;
+  const hpMax = player.hpMax || 100;
+  const hpPct = hpMax > 0 ? Math.round((hp / hpMax) * 100) : 0;
+
+  return {
+    floor,
+    nextBossFloor,
+    brinesStash,
+    hp,
+    hpMax,
+    hpPct,
+    title: `🩸 第 ${floor} 层 · 血瓶带入决策`,
+    subtitle: `下个 boss 战在第 ${nextBossFloor} 层`,
+    warning: hpPct < 60 ? '⚠️ 你的血量低于 60% — 强烈建议带血瓶' : null,
+    options: {
+      bring: {
+        id: 'bring',
+        label: '🩸 强制补 1 个血瓶',
+        text: `从 stash 取 1 个。当前 stash: ${brinesStash} 个`,
+        disabled: brinesStash < 1,
+        cost: 1
+      },
+      free: {
+        id: 'free',
+        label: '🎁 免费 1 个血瓶',
+        text: '每 10 层自动补给（floor 保底）',
+        disabled: false,
+        cost: 0
+      },
+      skip: {
+        id: 'skip',
+        label: '🚫 跳过（赌命）',
+        text: '下个 boss 战无血瓶。HP < 30% 时可能暴毙',
+        disabled: false,
+        cost: 0
+      }
+    }
+  };
+};
+
+/** 检查当前 floor 是否需要触发血瓶带入决策 modal */
+Climb.isBrineGateFloor = function (floor) {
+  return Climb.FREE_POTION_FLOORS.indexOf(floor) >= 0;
+};
+
+// ============================================================
 // 5. isBossFloor(floor) → boolean
 // ============================================================
 

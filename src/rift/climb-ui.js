@@ -268,13 +268,20 @@
     function openFloor(floor) {
       var s = State.load();
 
-      // Q5：每 10 层免费血瓶
-      if ([10, 20, 30].indexOf(floor) >= 0) {
-        addFreeBrine(s, 1);
-        State.save(s);
-        refreshMainPage();
+      // T2.1：每 10 层先弹血瓶带入决策 modal（强制，不跳过）
+      if (Climb.isBrineGateFloor(floor)) {
+        promptBrineGateModal(s, floor, function () {
+          // modal 关闭后再进入楼层战斗 modal
+          openFloorCombat(s, floor);
+        });
+        return;
       }
 
+      openFloorCombat(s, floor);
+    }
+
+    // 战斗 modal（怪物 + 胜率 + 2 按钮）
+    function openFloorCombat(s, floor) {
       var monster = Climb.spawnMonsterForFloor(floor);
       var isBoss = Climb.isBossFloor(floor);
       var winPct = Math.max(0, Math.min(100, Climb.getContinueProbability(s, monster)));
@@ -347,6 +354,102 @@
         closeModal(shell);
         runBattleAndDecide(boss, true);
       };
+    }
+
+    // ================================================================
+    // Modal 3b：血瓶带入决策（T2.1，每 10 层强制）
+    // ================================================================
+    function promptBrineGateModal(s, floor, onClose) {
+      var payload = Climb.showBrineGateModal(s, floor);
+      var opt = payload.options;
+
+      var warnHtml = payload.warning
+        ? '<div class="rv-brine-warn">' + payload.warning + '</div>'
+        : '';
+
+      var disabledBring = opt.bring.disabled ? ' rv-btn-disabled' : '';
+
+      var shell = openModal(
+        '<div class="rv-modal rv-modal-wide">' +
+          '<div class="rv-floor-badge rv-brine-badge">第 ' + floor + ' 层 · 血瓶带入决策</div>' +
+          '<div class="rv-brine-subtitle">' + payload.subtitle + '</div>' +
+          '<div class="rv-brine-stats">' +
+            '<span>❤️ ' + payload.hp + '/' + payload.hpMax + ' (' + payload.hpPct + '%)</span>' +
+            '<span>🩸 stash: ' + payload.brinesStash + '</span>' +
+          '</div>' +
+          warnHtml +
+          '<div class="rv-brine-choices">' +
+            '<button class="rv-brine-btn rv-brine-bring' + disabledBring + '" id="rv-brine-bring">' +
+              '<span class="rv-brine-label">' + opt.bring.label + '</span>' +
+              '<span class="rv-brine-text">' + opt.bring.text + '</span>' +
+            '</button>' +
+            '<button class="rv-brine-btn rv-brine-free" id="rv-brine-free">' +
+              '<span class="rv-brine-label">' + opt.free.label + '</span>' +
+              '<span class="rv-brine-text">' + opt.free.text + '</span>' +
+            '</button>' +
+            '<button class="rv-brine-btn rv-brine-skip" id="rv-brine-skip">' +
+              '<span class="rv-brine-label">' + opt.skip.label + '</span>' +
+              '<span class="rv-brine-text">' + opt.skip.text + '</span>' +
+            '</button>' +
+          '</div>' +
+        '</div>'
+      );
+
+      // 选项 1：从 stash 取 1 个血瓶（消耗 1 个，加 1 个 → stash 不变）
+      shell.querySelector('#rv-brine-bring').onclick = function () {
+        if (opt.bring.disabled) return;
+        // 从 stash 找 1 个 standard 消耗
+        var consumed = consumeBrineFromStash(s, 1);
+        if (consumed) {
+          addFreeBrine(s, 1); // 强制补 1 个
+          State.save(s);
+          closeModal(shell);
+          refreshMainPage();
+          if (typeof onClose === 'function') onClose();
+        }
+      };
+
+      // 选项 2：免费拿 1 个新血瓶（无消耗）
+      shell.querySelector('#rv-brine-free').onclick = function () {
+        addFreeBrine(s, 1);
+        State.save(s);
+        closeModal(shell);
+        refreshMainPage();
+        if (typeof onClose === 'function') onClose();
+      };
+
+      // 选项 3：跳过（不拿，下个 boss 战无血瓶）
+      shell.querySelector('#rv-brine-skip').onclick = function () {
+        // 标记 skip 选择（用于未来追溯/统计）
+        s._brineGateSkip = s._brineGateSkip || {};
+        s._brineGateSkip[floor] = true;
+        State.save(s);
+        closeModal(shell);
+        if (typeof onClose === 'function') onClose();
+      };
+    }
+
+    // 从 stash 消耗 1 个血瓶（找 standard 类型）
+    function consumeBrineFromStash(s, amount) {
+      if (!s.player.brines) return false;
+      amount = Math.max(1, Math.floor(amount || 1));
+      for (var i = 0; i < s.player.brines.length && amount > 0; i++) {
+        var b = s.player.brines[i];
+        if (!b) continue;
+        if (b.amount >= amount) {
+          b.amount -= amount;
+          amount = 0;
+          if (b.amount <= 0) {
+            s.player.brines.splice(i, 1);
+            i--;
+          }
+        } else {
+          amount -= b.amount;
+          s.player.brines.splice(i, 1);
+          i--;
+        }
+      }
+      return amount <= 0;
     }
 
     // ================================================================
