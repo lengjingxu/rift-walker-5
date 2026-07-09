@@ -278,6 +278,22 @@ RiftState.setChoice = function (choice) {
   return true;
 };
 
+// setBossSkill(skillId, floor) → T2.2 记录本场 boss 战选择的技能
+// skillId: string (e.g. 'wallfacer')
+// floor:   当前 boss 层（5/15/25/35）
+RiftState.setBossSkill = function (skillId, floor) {
+  const s = RiftState.getState();
+  if (!s.player) s.player = {};
+  if (!s.player.bossSkills) s.player.bossSkills = {};   // { [floor]: skillId }
+  if (!skillId || typeof floor !== 'number') {
+    console.warn('[RiftState] setBossSkill: 参数缺失', skillId, floor);
+    return false;
+  }
+  s.player.bossSkills[floor] = skillId;
+  RiftState.save(s);
+  return true;
+};
+
 // retreat() → 撤退结算
 // 带出当前所有装备，写入 record
 RiftState.retreat = function () {
@@ -379,9 +395,13 @@ RiftState.calcPlayerEHP = function () {
   return Game.calcEffectiveHP(build);
 };
 
-// simulateRiftBattle(monster) → 调用 Game.simulateBattle(buildPlayer, monster)
+// simulateRiftBattle(monster) → 走 RiftBattle 开放 tick 战斗，Game 兜底
 RiftState.simulateRiftBattle = function (monster) {
   const build = RiftState.buildPlayer();
+  if (typeof RiftBattle !== 'undefined' && RiftBattle.simulateBattle) {
+    return RiftBattle.simulateBattle(build, monster);
+  }
+  // 兜底：用旧 Game.simulateBattle（兼容 CI / 单元测试）
   return Game.simulateBattle(build, monster);
 };
 

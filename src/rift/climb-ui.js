@@ -284,6 +284,18 @@
     function openFloorCombat(s, floor) {
       var monster = Climb.spawnMonsterForFloor(floor);
       var isBoss = Climb.isBossFloor(floor);
+      // T2.2：Boss 战技能输入窗口（5/15/25/35）强制先选技能，再进战斗 modal
+      // 用 onChoose 回调确保 modal 关闭后再渲染战斗 modal（避免嵌套 — pitfall #21）
+      if (isBoss && Climb.isBossSkillWindowFloor(floor)) {
+        promptBossSkillModal(s, monster, function () {
+          renderCombatModal(s, floor, monster, isBoss);
+        });
+        return;
+      }
+      renderCombatModal(s, floor, monster, isBoss);
+    }
+
+    function renderCombatModal(s, floor, monster, isBoss) {
       var winPct = Math.max(0, Math.min(100, Climb.getContinueProbability(s, monster)));
 
       var winColor = winPct >= 70 ? 'rv-good' : winPct >= 40 ? 'rv-warn' : 'rv-bad';
@@ -427,6 +439,47 @@
         closeModal(shell);
         if (typeof onClose === 'function') onClose();
       };
+    }
+
+    // ================================================================
+    // Modal 3c：Boss 战技能输入窗口（T2.2，5/15/25/35 boss 战强制）
+    // ================================================================
+    function promptBossSkillModal(s, boss, onChoose) {
+      var payload = Climb.showBossSkillWindow(s, boss);
+      var skills = payload.skills || [];
+
+      var warnHtml = payload.warning
+        ? '<div class="rv-skill-warn">' + payload.warning + '</div>'
+        : '';
+
+      var skillsHtml = skills.map(function (sk) {
+        return '<button class="rv-skill-btn" data-skill-id="' + sk.id + '">' +
+          '<span class="rv-skill-label">' + sk.label + '</span>' +
+          '<span class="rv-skill-text">' + sk.text + '</span>' +
+        '</button>';
+      }).join('');
+
+      var shell = openModal(
+        '<div class="rv-modal rv-modal-wide">' +
+          '<div class="rv-floor-badge rv-skill-badge">第 ' + payload.floor + ' 层 · ' + payload.bossName + ' · 技能选择</div>' +
+          '<div class="rv-skill-subtitle">职业：' + payload.className + ' · 选择 1 个技能带入 boss 战</div>' +
+          warnHtml +
+          '<div class="rv-skill-choices">' + skillsHtml + '</div>' +
+        '</div>'
+      );
+
+      // 三个技能按钮的 click handler（统一绑定，按 data-skill-id 识别）
+      var btns = shell.querySelectorAll('.rv-skill-btn');
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].onclick = (function (btn) {
+          return function () {
+            var skillId = btn.getAttribute('data-skill-id');
+            State.setBossSkill(skillId, payload.floor);
+            closeModal(shell);
+            if (typeof onChoose === 'function') onChoose(skillId);
+          };
+        })(btns[i]);
+      }
     }
 
     // 从 stash 消耗 1 个血瓶（找 standard 类型）

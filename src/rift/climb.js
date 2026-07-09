@@ -485,6 +485,70 @@ Climb.isBrineGateFloor = function (floor) {
 };
 
 // ============================================================
+// 4c. showBossSkillWindow(state, boss) → Boss 战技能选择 modal payload (T2.2)
+// ============================================================
+
+/**
+ * T2.2 Boss 战技能输入窗口：5/15/25/35 boss 战强制 modal，让玩家选 1 个技能带入战斗。
+ *
+ * 设计动机：
+ *   - v2.0 Phase 1.5 已落"开放式 tick 战斗"，但玩家是被动挨打，没有"技能"概念
+ *   - Q7 已锁"6 职业各 3 技能"，但代码层尚未和 rift 模块打通
+ *   - boss 战是"剧情高潮"，应该给玩家"主动选择"的感觉
+ *
+ * 反直觉语义（必须 code 注释 + payload.text 双重明示）：
+ *   - 选了 skillX 后，本次战斗的 damage 公式会乘 skillX 的 mod.phys_mult 或 elem_mult
+ *   - 但 boss 战难度（hp/ac/dmg）**不变** —— 技能是"增幅器"不是"减压器"
+ *   - 每个 boss 战只能用 1 个技能（不能 chain）
+ *
+ * @param {object} state - 爬塔 state（含 player.classId）
+ * @param {object} boss - 当前 boss 怪物（含 floor / name / boss:true）
+ * @returns {object} modal payload { floor, bossName, classId, className, skills: [...], warning }
+ */
+Climb.showBossSkillWindow = function (state, boss) {
+  const player = state.player || {};
+  const classId = player.classId || 'paladin';
+  const classInfo = (typeof DATA !== 'undefined' && DATA.classes && DATA.classes[classId]) || null;
+  const skills = classInfo ? classInfo.skills : [];
+
+  // 三选项 payload（按职业技能列表 1:1 渲染，0/1/2 共 3 个）
+  const skillsPayload = skills.map((s, idx) => ({
+    idx,                                  // 0/1/2
+    id: s.id,
+    name: s.name,
+    desc: s.desc,
+    mod: s.mod,                           // {phys_mult, elem_mult, ...}
+    label: '✦ ' + s.name,                 // 视觉前缀
+    text: s.desc                          // 描述 = 技能 desc
+  }));
+
+  // HP 警告（与 T2.1 一致：信息呈现 ≠ 强制选择）
+  const hp = player.hp || 0;
+  const hpMax = player.hpMax || 100;
+  const hpPct = hpMax > 0 ? Math.round((hp / hpMax) * 100) : 0;
+  const warning = hpPct < 30
+    ? '⚠️ 你的血量极低（< 30%）— 强烈建议选治疗/防御类技能'
+    : null;
+
+  return {
+    floor: boss.floor || 0,
+    bossName: boss.name || '???',
+    classId,
+    className: classInfo ? classInfo.name : '???',
+    skills: skillsPayload,
+    warning,
+    hp, hpMax, hpPct
+  };
+};
+
+/** T2.2 · 检查当前 floor 是否触发 boss 战技能输入窗口 */
+Climb.isBossSkillWindowFloor = function (floor) {
+  return Climb.BOSS_SKILL_WINDOW_FLOORS.indexOf(floor) >= 0;
+};
+
+Climb.BOSS_SKILL_WINDOW_FLOORS = [5, 15, 25, 35];
+
+// ============================================================
 // 5. isBossFloor(floor) → boolean
 // ============================================================
 

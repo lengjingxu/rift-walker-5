@@ -188,6 +188,7 @@
           '</div>' +
           '<div class="rv-modal-actions">' +
             '<button class="rv-btn-primary rv-btn-full" id="rv-resume">↻ 继续</button>' +
+            '<button class="rv-btn-ghost rv-btn-full" id="rv-go-rest">🏕 进休息站</button>' +
             '<button class="rv-btn-ghost rv-btn-full" id="rv-restart">重新开始</button>' +
           '</div>' +
         '</div>'
@@ -195,6 +196,14 @@
       shell.querySelector('#rv-resume').onclick = function () {
         closeModal(shell);
         openFloor(State.load().climb.floor);
+      };
+      shell.querySelector('#rv-go-rest').onclick = function () {
+        closeModal(shell);
+        if (window.Rest && typeof window.Rest.open === 'function') {
+          window.Rest.open();
+        } else {
+          console.warn('[Rift UI] window.Rest 未加载');
+        }
       };
       shell.querySelector('#rv-restart').onclick = function () {
         closeModal(shell);
@@ -259,15 +268,34 @@
     function openFloor(floor) {
       var s = State.load();
 
-      // Q5：每 10 层免费血瓶
-      if ([10, 20, 30].indexOf(floor) >= 0) {
-        addFreeBrine(s, 1);
-        State.save(s);
-        refreshMainPage();
+      // T2.1：每 10 层先弹血瓶带入决策 modal（强制，不跳过）
+      if (Climb.isBrineGateFloor(floor)) {
+        promptBrineGateModal(s, floor, function () {
+          // modal 关闭后再进入楼层战斗 modal
+          openFloorCombat(s, floor);
+        });
+        return;
       }
 
+      openFloorCombat(s, floor);
+    }
+
+    // 战斗 modal（怪物 + 胜率 + 2 按钮）
+    function openFloorCombat(s, floor) {
       var monster = Climb.spawnMonsterForFloor(floor);
       var isBoss = Climb.isBossFloor(floor);
+      // T2.2：Boss 战技能输入窗口（5/15/25/35）强制先选技能，再进战斗 modal
+      // 用 onChoose 回调确保 modal 关闭后再渲染战斗 modal（避免嵌套 — pitfall #21）
+      if (isBoss && Climb.isBossSkillWindowFloor(floor)) {
+        promptBossSkillModal(s, monster, function () {
+          renderCombatModal(s, floor, monster, isBoss);
+        });
+        return;
+      }
+      renderCombatModal(s, floor, monster, isBoss);
+    }
+
+    function renderCombatModal(s, floor, monster, isBoss) {
       var winPct = Math.max(0, Math.min(100, Climb.getContinueProbability(s, monster)));
 
       var winColor = winPct >= 70 ? 'rv-good' : winPct >= 40 ? 'rv-warn' : 'rv-bad';
@@ -338,6 +366,143 @@
         closeModal(shell);
         runBattleAndDecide(boss, true);
       };
+    }
+
+    // ================================================================
+    // Modal 3b：血瓶带入决策（T2.1，每 10 层强制）
+    // ================================================================
+    function promptBrineGateModal(s, floor, onClose) {
+      var payload = Climb.showBrineGateModal(s, floor);
+      var opt = payload.options;
+
+      var warnHtml = payload.warning
+        ? '<div class="rv-brine-warn">' + payload.warning + '</div>'
+        : '';
+
+      var disabledBring = opt.bring.disabled ? ' rv-btn-disabled' : '';
+
+      var shell = openModal(
+        '<div class="rv-modal rv-modal-wide">' +
+          '<div class="rv-floor-badge rv-brine-badge">第 ' + floor + ' 层 · 血瓶带入决策</div>' +
+          '<div class="rv-brine-subtitle">' + payload.subtitle + '</div>' +
+          '<div class="rv-brine-stats">' +
+            '<span>❤️ ' + payload.hp + '/' + payload.hpMax + ' (' + payload.hpPct + '%)</span>' +
+            '<span>🩸 stash: ' + payload.brinesStash + '</span>' +
+          '</div>' +
+          warnHtml +
+          '<div class="rv-brine-choices">' +
+            '<button class="rv-brine-btn rv-brine-bring' + disabledBring + '" id="rv-brine-bring">' +
+              '<span class="rv-brine-label">' + opt.bring.label + '</span>' +
+              '<span class="rv-brine-text">' + opt.bring.text + '</span>' +
+            '</button>' +
+            '<button class="rv-brine-btn rv-brine-free" id="rv-brine-free">' +
+              '<span class="rv-brine-label">' + opt.free.label + '</span>' +
+              '<span class="rv-brine-text">' + opt.free.text + '</span>' +
+            '</button>' +
+            '<button class="rv-brine-btn rv-brine-skip" id="rv-brine-skip">' +
+              '<span class="rv-brine-label">' + opt.skip.label + '</span>' +
+              '<span class="rv-brine-text">' + opt.skip.text + '</span>' +
+            '</button>' +
+          '</div>' +
+        '</div>'
+      );
+
+      // 选项 1：从 stash 取 1 个血瓶（消耗 1 个，加 1 个 → stash 不变）
+      shell.querySelector('#rv-brine-bring').onclick = function () {
+        if (opt.bring.disabled) return;
+        // 从 stash 找 1 个 standard 消耗
+        var consumed = consumeBrineFromStash(s, 1);
+        if (consumed) {
+          addFreeBrine(s, 1); // 强制补 1 个
+          State.save(s);
+          closeModal(shell);
+          refreshMainPage();
+          if (typeof onClose === 'function') onClose();
+        }
+      };
+
+      // 选项 2：免费拿 1 个新血瓶（无消耗）
+      shell.querySelector('#rv-brine-free').onclick = function () {
+        addFreeBrine(s, 1);
+        State.save(s);
+        closeModal(shell);
+        refreshMainPage();
+        if (typeof onClose === 'function') onClose();
+      };
+
+      // 选项 3：跳过（不拿，下个 boss 战无血瓶）
+      shell.querySelector('#rv-brine-skip').onclick = function () {
+        // 标记 skip 选择（用于未来追溯/统计）
+        s._brineGateSkip = s._brineGateSkip || {};
+        s._brineGateSkip[floor] = true;
+        State.save(s);
+        closeModal(shell);
+        if (typeof onClose === 'function') onClose();
+      };
+    }
+
+    // ================================================================
+    // Modal 3c：Boss 战技能输入窗口（T2.2，5/15/25/35 boss 战强制）
+    // ================================================================
+    function promptBossSkillModal(s, boss, onChoose) {
+      var payload = Climb.showBossSkillWindow(s, boss);
+      var skills = payload.skills || [];
+
+      var warnHtml = payload.warning
+        ? '<div class="rv-skill-warn">' + payload.warning + '</div>'
+        : '';
+
+      var skillsHtml = skills.map(function (sk) {
+        return '<button class="rv-skill-btn" data-skill-id="' + sk.id + '">' +
+          '<span class="rv-skill-label">' + sk.label + '</span>' +
+          '<span class="rv-skill-text">' + sk.text + '</span>' +
+        '</button>';
+      }).join('');
+
+      var shell = openModal(
+        '<div class="rv-modal rv-modal-wide">' +
+          '<div class="rv-floor-badge rv-skill-badge">第 ' + payload.floor + ' 层 · ' + payload.bossName + ' · 技能选择</div>' +
+          '<div class="rv-skill-subtitle">职业：' + payload.className + ' · 选择 1 个技能带入 boss 战</div>' +
+          warnHtml +
+          '<div class="rv-skill-choices">' + skillsHtml + '</div>' +
+        '</div>'
+      );
+
+      // 三个技能按钮的 click handler（统一绑定，按 data-skill-id 识别）
+      var btns = shell.querySelectorAll('.rv-skill-btn');
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].onclick = (function (btn) {
+          return function () {
+            var skillId = btn.getAttribute('data-skill-id');
+            State.setBossSkill(skillId, payload.floor);
+            closeModal(shell);
+            if (typeof onChoose === 'function') onChoose(skillId);
+          };
+        })(btns[i]);
+      }
+    }
+
+    // 从 stash 消耗 1 个血瓶（找 standard 类型）
+    function consumeBrineFromStash(s, amount) {
+      if (!s.player.brines) return false;
+      amount = Math.max(1, Math.floor(amount || 1));
+      for (var i = 0; i < s.player.brines.length && amount > 0; i++) {
+        var b = s.player.brines[i];
+        if (!b) continue;
+        if (b.amount >= amount) {
+          b.amount -= amount;
+          amount = 0;
+          if (b.amount <= 0) {
+            s.player.brines.splice(i, 1);
+            i--;
+          }
+        } else {
+          amount -= b.amount;
+          s.player.brines.splice(i, 1);
+          i--;
+        }
+      }
+      return amount <= 0;
     }
 
     // ================================================================
