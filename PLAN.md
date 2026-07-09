@@ -51,7 +51,7 @@
 ### 任务清单
 - [x] **T3.1** gpt-image prompt 模板：主角（黑白手绘 Sin City 风）→ docs/PROMPTS.md
 - [x] **T3.2** gpt-image prompt 模板：怪物（Junji Ito + glitch 风）→ docs/PROMPTS.md（9 变体：5 normal + 2 elite + 3 boss，三档调性梯度）
-- [ ] **T3.3** gpt-image prompt 模板：boss 戏剧肖像（David Lynch 风）
+- [x] **T3.3** gpt-image prompt 模板：boss 戏剧肖像（David Lynch 风）→ docs/PROMPTS.md（7 boss 变体：共享 Lynch 通用前缀/后缀，每张含单件时代错位物，眼神直视镜头且空）
 - [ ] **T3.4** 7 boss 立绘生成 + 每 5 张汇报
 - [ ] **T3.5** 7 过场插图生成 + 终局真照片 3 张
 - [ ] **T3.6** 取消 8-bit 像素感，但保留骨架（按 Q8）
