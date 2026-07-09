@@ -14,7 +14,7 @@
 - [x] **T1.3** `src/rift/rest.js` —— 休息站 UI（换装 / 升级 / 融入三个 tab）
 - [x] **T1.4** `src/rift/economy.js` —— 金币 / 血瓶 / 卖出 / 兑换
 - [x] **T1.5** `src/rift/battle.js` —— `simulateBattle` 改开放式 tick 战斗
-- [ ] **T1.6** 60 怪列表扩展（基于现有 13 怪 + 自动难度曲线 47 怪） [wip — subagent 47e6edb]
+- [x] **T1.6** 60 怪列表扩展（13→60，覆盖 lv 1-34，tier normal:35 / boss:10 / elite:15）
 - [x] **T1.7** 7 boss 列表 + boss gate 检测
 
 ### 验收
