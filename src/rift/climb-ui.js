@@ -268,6 +268,15 @@
     function openFloor(floor) {
       var s = State.load();
 
+      // T2.4：道德分支剧情事件（先于一切 modals，给叙事落地）
+      var branchEvent = Climb.checkBranchEvent(s, floor);
+      if (branchEvent) {
+        promptBranchEventModal(s, branchEvent, floor, function () {
+          openFloor(s, floor); // 分支 modal 关后重入 openFloor，走后续 brine / 战斗流程
+        });
+        return;
+      }
+
       // T2.1：每 10 层先弹血瓶带入决策 modal（强制，不跳过）
       if (Climb.isBrineGateFloor(floor)) {
         promptBrineGateModal(s, floor, function () {
@@ -278,6 +287,72 @@
       }
 
       openFloorCombat(s, floor);
+    }
+
+    // ================================================================
+    // Modal 3a：道德分支剧情事件（T2.4，floor 20/25 触发，按 moralBias）
+    // ================================================================
+    function promptBranchEventModal(s, branchEvent, floor, onClose) {
+      var ev = branchEvent;
+      var biasLabel = ev.moralBias === 'spare' ? '✋ 不伤' : '🩸 终结';
+      var choices = ev.choices || [];
+      var buttonsHtml = choices.map(function (c, idx) {
+        var cssClass = idx === 0 ? 'rv-choice-spare' : 'rv-choice-destroy';
+        return '<button class="rv-choice-btn ' + cssClass + '" data-choice-id="' + c.id + '">' +
+                 '<span class="rv-choice-label">' + c.label + '</span>' +
+               '</button>';
+      }).join('');
+
+      var shell = openModal(
+        '<div class="rv-modal rv-modal-wide">' +
+          '<div class="rv-floor-badge rv-boss-badge">第 ' + floor + ' 层 · 道德分支</div>' +
+          '<div class="rv-boss-lore"><strong>' + ev.title + '</strong> · ' + biasLabel + ' 偏向 ' + ev.currentRatio + '%</div>' +
+          '<div class="rv-branch-text">' + (ev.text || '').replace(/\n/g, '<br>') + '</div>' +
+          '<div class="rv-choice-row">' + buttonsHtml + '</div>' +
+        '</div>'
+      );
+
+      shell.querySelectorAll('.rv-choice-btn').forEach(function (btn) {
+        btn.onclick = function () {
+          var choiceId = btn.getAttribute('data-choice-id');
+          var choice = choices.find(function (c) { return c.id === choiceId; });
+          if (!choice || !choice.effect) {
+            closeModal(shell);
+            if (typeof onClose === 'function') onClose();
+            return;
+          }
+          applyBranchEventEffect(s, choice.effect, floor);
+          State.save(s);
+          closeModal(shell);
+          if (typeof onClose === 'function') onClose();
+        };
+      });
+    }
+
+    /** 把分支事件的 effect 落到 state 上 */
+    function applyBranchEventEffect(s, effect, floor) {
+      if (!effect) return;
+      // 道德累积：spare/destroy ±1
+      if (effect.moralSpare) {
+        for (var i = 0; i < Math.abs(effect.moralSpare); i++) {
+          if (effect.moralSpare > 0) State.setChoice('spared');
+          else State.setChoice('destroyed');
+        }
+      }
+      if (effect.moralDestroy) {
+        for (var j = 0; j < Math.abs(effect.moralDestroy); j++) {
+          State.setChoice('destroyed');
+        }
+      }
+      // 金币奖励
+      if (effect.goldBonus) {
+        s.player.gold = (s.player.gold || 0) + effect.goldBonus;
+      }
+      // boss 弱化（标记到下一层 boss 战，对应 floor）
+      if (effect.bossWeaken) {
+        s._bossWeaken = s._bossWeaken || {};
+        s._bossWeaken[floor] = effect.bossWeaken;
+      }
     }
 
     // 战斗 modal（怪物 + 胜率 + 2 按钮）
