@@ -358,17 +358,27 @@ RiftState.continueFromDeath = function () {
 // ==================== Build 计算（复用 Game） ====================
 // buildPlayer() → 用当前 player.items 构建 Game.aggregateBuild 输入
 // 返回 build 对象，可直接传给 Game.calcDPS / calcEffectiveHP / Game.simulateBattle
-RiftState.buildPlayer = function () {
+RiftState.buildPlayer = function (overrideSkillId) {
   const s = RiftState.getState();
   const classId = s.player.classId;
   const cls = DATA.classes[classId];
   if (!cls) return { mods: {} };
 
+  // T2.2:boss 战技能输入窗口 — 5/15/25/35 boss 战玩家已选技能，
+  // 必须把 bossSkills[floor] 注入到 aggregateBuild，让 skill.mod 实际生效。
+  // 非 boss 战 fallback 到原 s.player.skills[0]（不影响已有调用方）。
+  const floor = (s.climb && s.climb.floor) || 0;
+  const bossSkillId = (s.player.bossSkills && s.player.bossSkills[floor]) || null;
+  const skillId = overrideSkillId
+    || bossSkillId
+    || (s.player.skills && s.player.skills[0])
+    || cls.skills[0].id;
+
   // 构造 Game.aggregateBuild 需要的 player 结构
   const simPlayer = {
     classId,
     baseStats: { ...cls.base },
-    skillId: s.player.skills[0] || cls.skills[0].id,
+    skillId,
     equipped: {}
   };
 
