@@ -1,5 +1,11 @@
 # 迭代日志
 
+### 2026-07-10 01:00 · T3.1 prompt 模板入库
+- 新增 `docs/PROMPTS.md`：主角 6 职业（Paladin/Barbarian/Sorceress/Necromancer/Druid/Assassin）共用 Sin City 风前缀后缀，每个职业仅替换中间职业段。
+- 验证清单：无彩色 + 表情可读 + 不裁切。
+- T3.2/T3.3 模板占位待执行。
+- PLAN T3.1 标记完成。
+
 > 每次 cron 任务完成后追加一行。保留最近 50 条。
 
 ## [v1.6 #1] 2026-07-06 23:55 · snapshot-pin · 808/808 ✅

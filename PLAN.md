@@ -49,7 +49,7 @@
 **目标**：7 boss 立绘 + 7 过场插图 + 真照片终局
 
 ### 任务清单
-- [ ] **T3.1** gpt-image prompt 模板：主角（黑白手绘 Sin City 风）
+- [x] **T3.1** gpt-image prompt 模板：主角（黑白手绘 Sin City 风）→ docs/PROMPTS.md
 - [ ] **T3.2** gpt-image prompt 模板：怪物（Junji Ito + glitch 风）
 - [ ] **T3.3** gpt-image prompt 模板：boss 戏剧肖像（David Lynch 风）
 - [ ] **T3.4** 7 boss 立绘生成 + 每 5 张汇报
