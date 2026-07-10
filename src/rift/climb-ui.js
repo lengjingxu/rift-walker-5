@@ -412,12 +412,19 @@
     // ================================================================
     function promptMoralChoiceThenBoss(boss) {
       var mc = Climb.showMoralChoice(boss.id);
-      var lore = (boss && (boss.lore || boss.theme)) || mc.theme || '';
+      // 优先读 boss.story（T4.x 长篇），fallback 到 lore/theme
+      var loreRaw = (boss && (boss.story || boss.lore || boss.theme)) || mc.story || mc.theme || '';
+      // 把 \n 换成段落 <p>，长篇故事更好读
+      var lore = loreRaw
+        ? loreRaw.split(/\n\s*\n/).map(function (p) { return '<p>' + p.replace(/\n/g, '<br>') + '</p>'; }).join('')
+        : '';
+      // 道德钩子（如果有）
+      var hook = boss && boss.moralHook ? '<span class="rv-moral-hook">' + boss.moralHook + '</span>' : '';
 
       var shell = openModal(
         '<div class="rv-modal rv-modal-wide">' +
           '<div class="rv-floor-badge rv-boss-badge">' + mc.bossName + ' · BOSS</div>' +
-          '<div class="rv-boss-lore">' + lore + '</div>' +
+          '<div class="rv-boss-lore">' + lore + hook + '</div>' +
           '<div class="rv-choice-row">' +
             '<button class="rv-choice-btn rv-choice-destroy" id="rv-choose-a">' +
               '<span class="rv-choice-label">' + mc.choiceA.label + '</span>' +

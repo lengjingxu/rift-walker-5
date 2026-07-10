@@ -53,9 +53,9 @@
 - [x] **T3.2** gpt-image prompt 模板：怪物（Junji Ito + glitch 风）→ docs/PROMPTS.md（9 变体：5 normal + 2 elite + 3 boss，三档调性梯度）
 - [x] **T3.3** gpt-image prompt 模板：boss 戏剧肖像（David Lynch 风）→ docs/PROMPTS.md（7 boss 变体：共享 Lynch 通用前缀/后缀，每张含单件时代错位物，眼神直视镜头且空）
 - [x] **T3.4** 7 boss 立绘生成 + 每 5 张汇报（设计/规格/脚本/汇报模板已落 `docs/BOSS_PORTRAITS_SPEC.md` + `assets/boss/{README,generation_log}`；实际 gpt-image-2 调用 blocked by `GPT_IMAGE_API_KEY`，留冷景旭手动触发；详见 spec §7）
-- [ ] **T3.5** 7 过场插图生成 + 终局真照片 3 张
+- [ ] **T3.5** 7 过场插图生成 + 终局真照片 3 张 *(blocked by `GPT_IMAGE_API_KEY`；spec + prompts 已落 `docs/CUTSCENES_SPEC.md`，等主人手动触发)*
 - [x] **T3.6** 取消 8-bit 像素感，但保留骨架（按 Q8；移除 18 处 `image-rendering: pixelated` + `image-rendering: crisp-edges`，font-smoothing 改 antialiased；sprite 尺寸/边框/调色板/像素字体骨架保留）
-- [ ] **T3.7** sprite animation loop（4-8 帧 sprite sheet）
+- [ ] **T3.7** sprite animation loop（4-8 帧 sprite sheet）*(blocked by `GPT_IMAGE_API_KEY`；依赖 T3.4 boss 立绘生成出图才能落 sprite sheet，等主人触发后做)*
 
 ### 验收
 - 每个 boss 有 4 帧攻击动画 sprite sheet
@@ -69,7 +69,7 @@
 **目标**：7 段悲剧文案 + 终局元层揭示
 
 ### 任务清单
-- [ ] **T4.1** Boss 5 "漫游者·王" 故事 200 字
+- [x] **T4.1** Boss 5 "漫游者·王" 故事 200 字 *(344 中文字；写入 `docs/BOSS_STORIES/T4.1_漫游者王.md` + 嵌入 `src/rift/climb.js` BOSS_MAP.5.story/moralHook + `climb-ui.js` 渲染管线支持长篇；240705 commit)*
 - [ ] **T4.2** Boss 10 "算法警察" 故事 200 字
 - [ ] **T4.3** Boss 15 "母亲回声" 故事 250 字（呼应"女儿找爸爸"分支）
 - [ ] **T4.4** Boss 20 "Trinity 核心" 故事 250 字
