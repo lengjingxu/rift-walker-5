@@ -54,7 +54,7 @@
 - [x] **T3.3** gpt-image prompt 模板：boss 戏剧肖像（David Lynch 风）→ docs/PROMPTS.md（7 boss 变体：共享 Lynch 通用前缀/后缀，每张含单件时代错位物，眼神直视镜头且空）
 - [x] **T3.4** 7 boss 立绘生成 + 每 5 张汇报（设计/规格/脚本/汇报模板已落 `docs/BOSS_PORTRAITS_SPEC.md` + `assets/boss/{README,generation_log}`；实际 gpt-image-2 调用 blocked by `GPT_IMAGE_API_KEY`，留冷景旭手动触发；详见 spec §7）
 - [ ] **T3.5** 7 过场插图生成 + 终局真照片 3 张
-- [ ] **T3.6** 取消 8-bit 像素感，但保留骨架（按 Q8）
+- [x] **T3.6** 取消 8-bit 像素感，但保留骨架（按 Q8；移除 18 处 `image-rendering: pixelated` + `image-rendering: crisp-edges`，font-smoothing 改 antialiased；sprite 尺寸/边框/调色板/像素字体骨架保留）
 - [ ] **T3.7** sprite animation loop（4-8 帧 sprite sheet）
 
 ### 验收

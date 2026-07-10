@@ -45,12 +45,10 @@ html, body {
   font-size: 18px;
   line-height: 1.2;
   overflow: hidden;
-  -webkit-font-smoothing: none;
+  -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: geometricPrecision;
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
+  /* T3.6 · 取消 8-bit 像素感（pixelated 移除），保留调色板/边框/精灵尺寸骨架 */
 }
 
 body {
@@ -63,12 +61,10 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  image-rendering: pixelated;
 }
 
 button, input, select {
   font-family: 'Press Start 2P', 'VT323', monospace;
-  image-rendering: pixelated;
 }
 
 button {
@@ -98,7 +94,6 @@ button {
 .brand-icon {
   width: 28px;
   height: 28px;
-  image-rendering: pixelated;
 }
 
 .brand-name {
@@ -400,7 +395,6 @@ button {
   background: var(--bg-mid);
   border: 1px solid var(--bg-highlight);
   padding: 2px;
-  image-rendering: pixelated;
 }
 
 .slot-info {
@@ -629,7 +623,6 @@ button {
   background: var(--bg-black);
   border: 1px solid var(--bg-highlight);
   padding: 2px;
-  image-rendering: pixelated;
 }
 
 .monster-card .m-name {
@@ -1045,7 +1038,6 @@ button {
   background: var(--bg-black);
   border: 1px solid var(--bg-highlight);
   padding: 1px;
-  image-rendering: pixelated;
   position: absolute;
   right: 4px;
   top: 4px;
@@ -1428,7 +1420,6 @@ button {
   background: var(--bg-black);
   border: 2px solid var(--bg-highlight);
   padding: 2px;
-  image-rendering: pixelated;
   flex-shrink: 0;
 }
 
@@ -1632,7 +1623,6 @@ button {
   padding: 4px 8px;
   cursor: pointer;
   box-shadow: 2px 2px 0 var(--shadow);
-  image-rendering: pixelated;
 }
 .codex-filter:hover { color: var(--gold-bright); }
 .codex-filter.active {
@@ -1675,7 +1665,6 @@ button {
   background: var(--bg-black);
   border: 1px solid var(--bg-highlight);
   padding: 2px;
-  image-rendering: pixelated;
 }
 .codex-monster-name {
   font-family: 'Press Start 2P', monospace;
@@ -1925,7 +1914,6 @@ button {
   background: var(--bg-black);
   border: 2px solid var(--bg-highlight);
   padding: 2px;
-  image-rendering: pixelated;
   flex-shrink: 0;
 }
 
@@ -2150,7 +2138,6 @@ button {
 
 .gem-pick-icon svg {
   display: block;
-  image-rendering: pixelated;
 }
 
 .gem-pick-name {
@@ -2436,7 +2423,6 @@ button {
   background: var(--bg-black);
   border: 1px solid var(--bg-highlight);
   padding: 2px;
-  image-rendering: pixelated;
   flex-shrink: 0;
 }
 
@@ -2886,7 +2872,7 @@ button {
   border: 1px solid var(--bg-highlight);
   align-self: center;
 }
-.bc-side-icon svg { width: 32px; height: 32px; image-rendering: pixelated; }
+.bc-side-icon svg { width: 32px; height: 32px; }
 .bc-side-info { min-width: 0; align-self: center; }
 .bc-side-name {
   font-family: 'Press Start 2P', monospace;
@@ -3186,7 +3172,6 @@ button {
   background: var(--bg-black);
   border: 2px solid var(--bg-highlight);
   padding: 2px;
-  image-rendering: pixelated;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3495,7 +3480,6 @@ button {
 .lazy-icon {
   display: inline-block;
   vertical-align: middle;
-  image-rendering: pixelated;
 }
 
 /* ==================== v1.5 第 2 项 · 战斗回放控制台（REPLAY） ==================== */
