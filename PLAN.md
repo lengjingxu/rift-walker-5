@@ -53,9 +53,9 @@
 - [x] **T3.2** gpt-image prompt 模板：怪物（Junji Ito + glitch 风）→ docs/PROMPTS.md（9 变体：5 normal + 2 elite + 3 boss，三档调性梯度）
 - [x] **T3.3** gpt-image prompt 模板：boss 戏剧肖像（David Lynch 风）→ docs/PROMPTS.md（7 boss 变体：共享 Lynch 通用前缀/后缀，每张含单件时代错位物，眼神直视镜头且空）
 - [x] **T3.4** 7 boss 立绘生成 + 每 5 张汇报（设计/规格/脚本/汇报模板已落 `docs/BOSS_PORTRAITS_SPEC.md` + `assets/boss/{README,generation_log}`；实际 gpt-image-2 调用 blocked by `GPT_IMAGE_API_KEY`，留冷景旭手动触发；详见 spec §7）
-- [ ] **T3.5** 7 过场插图生成 + 终局真照片 3 张 *(blocked by `GPT_IMAGE_API_KEY`；spec + prompts 已落 `docs/CUTSCENES_SPEC.md`，等主人手动触发)*
 - [x] **T3.6** 取消 8-bit 像素感，但保留骨架（按 Q8；移除 18 处 `image-rendering: pixelated` + `image-rendering: crisp-edges`，font-smoothing 改 antialiased；sprite 尺寸/边框/调色板/像素字体骨架保留）
-- [ ] **T3.7** sprite animation loop（4-8 帧 sprite sheet）*(blocked by `GPT_IMAGE_API_KEY`；依赖 T3.4 boss 立绘生成出图才能落 sprite sheet，等主人触发后做)*
+
+> T3.5 / T3.7 因无 `GPT_IMAGE_API_KEY` 凭证无法由 cron 自动执行，已移至本文末「Deferred Tasks」区段，等冷景旭手动触发
 
 ### 验收
 - 每个 boss 有 4 帧攻击动画 sprite sheet
@@ -70,7 +70,7 @@
 
 ### 任务清单
 - [x] **T4.1** Boss 5 "漫游者·王" 故事 200 字 *(344 中文字；写入 `docs/BOSS_STORIES/T4.1_漫游者王.md` + 嵌入 `src/rift/climb.js` BOSS_MAP.5.story/moralHook + `climb-ui.js` 渲染管线支持长篇；240705 commit)*
-- [ ] **T4.2** Boss 10 "算法警察" 故事 200 字
+- [x] **T4.2** Boss 10 "算法警察" 故事 200 字 *(219 中文字；写入 `docs/BOSS_STORIES/T4.2_算法警察.md` + 嵌入 `src/rift/climb.js` BOSS_MAP.10.story/moralHook；smoke PASS)*
 - [ ] **T4.3** Boss 15 "母亲回声" 故事 250 字（呼应"女儿找爸爸"分支）
 - [ ] **T4.4** Boss 20 "Trinity 核心" 故事 250 字
 - [ ] **T4.5** Boss 25 "觉醒者·父" 故事 300 字
@@ -137,3 +137,12 @@
 - ❌ 不做美术大改（保留 Q8 风格基线，不破世界）
 - ❌ 不做新职业（6 职业锁死）
 - ❌ 不做取消机制（融入 → 真碎，升级 → 真碎，无回滚）
+
+---
+
+## Deferred Tasks · 等凭证/等出图
+
+> 这些任务被自动 cron 跳过（grep `- [ ]` 不会抓到，因为它们已从 Phase 清单移出）。冷景旭提供凭证或前置条件满足后，手动移回对应 Phase。
+
+- **T3.5** 7 过场插图生成 + 终局真照片 3 张 — *blocked by `GPT_IMAGE_API_KEY`；spec + prompts 已落 `docs/CUTSCENES_SPEC.md`*
+- **T3.7** sprite animation loop（4-8 帧 sprite sheet） — *blocked by `GPT_IMAGE_API_KEY`；依赖 T3.4 boss 立绘生成出图*
