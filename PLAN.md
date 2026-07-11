@@ -71,7 +71,7 @@
 ### 任务清单
 - [x] **T4.1** Boss 5 "漫游者·王" 故事 200 字 *(344 中文字；写入 `docs/BOSS_STORIES/T4.1_漫游者王.md` + 嵌入 `src/rift/climb.js` BOSS_MAP.5.story/moralHook + `climb-ui.js` 渲染管线支持长篇；240705 commit)*
 - [x] **T4.2** Boss 10 "算法警察" 故事 200 字 *(219 中文字；写入 `docs/BOSS_STORIES/T4.2_算法警察.md` + 嵌入 `src/rift/climb.js` BOSS_MAP.10.story/moralHook；smoke PASS)*
-- [ ] **T4.3** Boss 15 "母亲回声" 故事 250 字（呼应"女儿找爸爸"分支）
+- [x] **T4.3** Boss 15 "母亲回声" 故事 250 字（呼应"女儿找爸爸"分支）· docs/BOSS_STORIES/T4.3_母亲回声.md，246 中文字，CT-0714 父亲镜像 + 99.7% 母亲重写 + 47 段声纹
 - [ ] **T4.4** Boss 20 "Trinity 核心" 故事 250 字
 - [ ] **T4.5** Boss 25 "觉醒者·父" 故事 300 字
 - [ ] **T4.6** Boss 30 "智子降临" 故事 300 字
