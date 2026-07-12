@@ -65,6 +65,7 @@
         <button class="tab" data-tab="codex">CODEX</button>
         <button class="tab" data-tab="recommend">RECOMMEND</button>
         <button class="tab" data-tab="climb">CLIMB</button>
+        <button class="tab" data-tab="leaderboard">RANK</button>
       </div>
 
       <!-- 战斗 Tab -->
@@ -235,6 +236,31 @@
       <div id="tab-climb" class="tab-content">
         <div class="placeholder">// 加载裂隙行者中...</div>
       </div>
+
+      <!-- T5.3 · 排行榜 Tab -->
+      <div id="tab-leaderboard" class="tab-content">
+        <div class="sub-title">// TOP 50 RUNS</div>
+        <div class="lb-toolbar">
+          <button id="lb-refresh" class="lb-btn">刷新</button>
+          <span id="lb-status" class="lb-status">点击刷新加载</span>
+        </div>
+        <div class="lb-table-wrap">
+          <table id="lb-table" class="lb-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>玩家</th>
+                <th>分数</th>
+                <th>层数</th>
+                <th>结局</th>
+                <th>职业</th>
+                <th>时间</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
     </section>
 
     <!-- 右：详情/日志 -->
@@ -371,6 +397,70 @@
   });
   // 也兼容 defer/async 加载顺序：直接尝试
   if (window.RiftUI && window.RiftUI.init) window.RiftUI.init();
+</script>
+<script>
+  // T5.3 · LEADERBOARD tab 初始化
+  // - 点 RANK tab 第一次自动 fetchTop(50)
+  // - 刷新按钮手动再拉
+  // - best-effort：失败仅更新 status 文本，不弹 modal
+  (function () {
+    'use strict';
+    var lbTable = null;
+    var lbStatus = null;
+    var lbBtn = null;
+    var lbLoaded = false;
+    var lbLoading = false;
+
+    function setStatus(text) {
+      if (lbStatus) lbStatus.textContent = text;
+    }
+
+    function loadLeaderboard() {
+      if (lbLoading) return;
+      lbLoading = true;
+      setStatus('拉取中...');
+      if (!window.Leaderboard || !window.Leaderboard.fetchTop) {
+        setStatus('leaderboard.js 未加载');
+        lbLoading = false;
+        return;
+      }
+      window.Leaderboard.fetchTop(50).then(function (r) {
+        lbLoading = false;
+        if (r && r.ok && r.body && Array.isArray(r.body.items)) {
+          window.Leaderboard.renderTable(lbTable, r.body);
+          var n = r.body.items.length;
+          var more = r.body.hasMore ? ' (还有更多)' : '';
+          setStatus('已加载 ' + n + ' 条记录' + more + ' · ' + new Date().toLocaleTimeString());
+          lbLoaded = true;
+        } else {
+          setStatus('加载失败: ' + (r && r.error ? r.error : 'unknown'));
+        }
+      });
+    }
+
+    function bindOnce() {
+      lbTable = document.getElementById('lb-table');
+      lbStatus = document.getElementById('lb-status');
+      lbBtn = document.getElementById('lb-refresh');
+      if (!lbTable || !lbBtn) return false;
+      lbBtn.addEventListener('click', function () { loadLeaderboard(); });
+      // 监听 tab 切换：第一次切到 RANK 自动加载
+      document.querySelectorAll('.tab').forEach(function (t) {
+        if (t.dataset && t.dataset.tab === 'leaderboard') {
+          t.addEventListener('click', function () {
+            if (!lbLoaded) loadLeaderboard();
+          });
+        }
+      });
+      return true;
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bindOnce);
+    } else {
+      bindOnce();
+    }
+  })();
 </script>
 <script>
   // v1.4 第 4 项 · Service Worker 注册（离线缓存）

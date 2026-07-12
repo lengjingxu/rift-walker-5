@@ -194,9 +194,149 @@
     return v.slice(0, max);
   }
 
+  // ---- T5.3: GET 拉排行榜 ----
+  // 与 POST 一样走 LEADERBOARD_ENDPOINT（同一端点 /api/leaderboard，method 不同）。
+  // best-effort：失败 resolve { ok:false, error }，不 reject。
+  // 默认 limit=50，由 FC MAX_LEADERBOARD_LIMIT=100 兜底。
+  function fetchTop(limit) {
+    return new Promise(function (resolve) {
+      try {
+        var endpoint = root.LEADERBOARD_ENDPOINT || '';
+        if (!endpoint) {
+          resolve({ ok: false, error: 'no_endpoint' });
+          return;
+        }
+        var lim = (typeof limit === 'number' && isFinite(limit) && limit > 0) ? Math.min(100, limit) : 50;
+        // endpoint 已经包含 /api/leaderboard，加 ?limit=N
+        var sep = endpoint.indexOf('?') >= 0 ? '&' : '?';
+        var url = endpoint + sep + 'limit=' + lim;
+
+        var controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+        var timer;
+        if (controller) {
+          timer = setTimeout(function () { try { controller.abort(); } catch (_) {} }, TIMEOUT_MS);
+        }
+        var opts = { method: 'GET', headers: { 'Accept': 'application/json' }, mode: 'cors', credentials: 'omit', cache: 'no-store' };
+        if (controller) opts.signal = controller.signal;
+
+        fetch(url, opts)
+          .then(function (resp) {
+            if (timer) clearTimeout(timer);
+            return resp.text().then(function (text) {
+              var parsed = null;
+              try { parsed = text ? JSON.parse(text) : null; } catch (_) {}
+              resolve({ ok: resp.ok, status: resp.status, body: parsed });
+            });
+          })
+          .catch(function (err) {
+            if (timer) clearTimeout(timer);
+            console.warn('[Leaderboard] fetchTop failed:', err && err.message);
+            resolve({ ok: false, error: String(err && err.message || err) });
+          });
+      } catch (err) {
+        console.warn('[Leaderboard] fetchTop exception:', err);
+        resolve({ ok: false, error: String(err && err.message || err) });
+      }
+    });
+  }
+
+  // ---- T5.3: 渲染表格（vanilla DOM，5 列 + 排名）----
+  // 输入：body.items 数组（每项含 player / score / floor / ending / classId / submittedAt）
+  // 输出：把 #lb-table tbody 填满；空态显示"暂无记录"
+  function renderTable(container, body) {
+    if (!container) return;
+    var tbody = container.querySelector('tbody') || container;
+    // 清空（保留 thead）
+    var existing = container.querySelectorAll('tbody tr');
+    for (var i = 0; i < existing.length; i++) existing[i].parentNode.removeChild(existing[i]);
+
+    if (!body || !Array.isArray(body.items) || body.items.length === 0) {
+      var empty = document.createElement('tr');
+      empty.className = 'lb-empty';
+      var td = document.createElement('td');
+      td.colSpan = 7;
+      td.textContent = '暂无记录 · 第一个冲榜的人就是你';
+      empty.appendChild(td);
+      (container.querySelector('tbody') || container.appendChild(document.createElement('tbody'))).appendChild(empty);
+      return;
+    }
+
+    var tbodyEl = container.querySelector('tbody') || (function () {
+      var t = document.createElement('tbody');
+      container.appendChild(t);
+      return t;
+    })();
+
+    for (var j = 0; j < body.items.length; j++) {
+      var r = body.items[j];
+      var tr = document.createElement('tr');
+      var cells = [
+        '#' + (j + 1),                                 // rank
+        esc(r.player || 'anonymous'),                  // player
+        String(r.score != null ? r.score : 0),         // score
+        (r.floor != null ? r.floor : 0) + 'F',         // floor
+        esc(endingLabel(r.ending)),                    // ending
+        esc(classLabel(r.classId)),                    // class
+        formatTime(r.submittedAt)                      // submittedAt
+      ];
+      for (var k = 0; k < cells.length; k++) {
+        var td2 = document.createElement('td');
+        td2.textContent = cells[k];
+        tr.appendChild(td2);
+      }
+      tbodyEl.appendChild(tr);
+    }
+  }
+
+  // ---- T5.3: 渲染辅助 ----
+  function endingLabel(e) {
+    var map = {
+      'A_Rebel':      'A·叛逆',
+      'B_Inheritor':  'B·继承',
+      'C_Glitched':   'C·崩坏',
+      'died':         '死亡',
+      'retreated':    '撤退'
+    };
+    return map[e] || (e || '-');
+  }
+  function classLabel(c) {
+    var map = {
+      'paladin':      '圣骑士',
+      'barbarian':    '野蛮人',
+      'sorceress':    '女巫',
+      'necromancer':  '死灵',
+      'druid':        '德鲁伊',
+      'assassin':     '刺客'
+    };
+    return map[c] || (c || '-');
+  }
+  function formatTime(s) {
+    if (!s) return '-';
+    // submittedAt 来自 FC，可能是 ms 数字字符串（feishu datetime cell），
+    // 也可能是 ISO string。
+    var n = Number(s);
+    var d;
+    if (isFinite(n) && n > 1000000000) {
+      // ms 数字
+      d = new Date(n < 1e12 ? n * 1000 : n);
+    } else {
+      d = new Date(String(s));
+    }
+    if (isNaN(d.getTime())) return String(s);
+    var pad = function (x) { return x < 10 ? '0' + x : '' + x; };
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
   // ---- 暴露 ----
   root.Leaderboard = {
     submitRun: submitRun,
+    fetchTop: fetchTop,
+    renderTable: renderTable,
     WORKER_URL: WORKER_URL,
     TIMEOUT_MS: TIMEOUT_MS
   };

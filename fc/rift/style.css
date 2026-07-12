@@ -371,3 +371,79 @@
   pointer-events: none;
   z-index: 99999;
 }
+
+/* ============================================================
+   T5.3 · LEADERBOARD tab
+   极简表格 · 暗黑 · 等宽字体 · 与 CODEX tab 视觉对齐
+   ============================================================ */
+.lb-toolbar {
+  display: flex; align-items: center; gap: 12px;
+  margin: 8px 0 12px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.lb-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid #3a3f4b;
+  color: #d0d4dc;
+  padding: 4px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.lb-btn:hover {
+  background: rgba(102, 136, 255, 0.15);
+  border-color: #6688ff;
+  color: #6688ff;
+}
+.lb-btn:active { transform: scale(0.97); }
+.lb-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.lb-status {
+  font-size: 11px;
+  color: #6a7080;
+  font-family: 'JetBrains Mono', monospace;
+}
+.lb-table-wrap {
+  max-height: 60vh;
+  overflow-y: auto;
+  border: 1px solid #2a2f3a;
+  background: rgba(0,0,0,0.25);
+}
+.lb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #d0d4dc;
+}
+.lb-table thead {
+  position: sticky; top: 0; z-index: 1;
+  background: #1a1f2a;
+}
+.lb-table th {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid #3a3f4b;
+  color: #99a0b0;
+  font-weight: normal;
+  letter-spacing: 0.5px;
+}
+.lb-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid #1a1f2a;
+}
+.lb-table tbody tr:hover { background: rgba(102, 136, 255, 0.06); }
+.lb-table tbody tr td:first-child {
+  color: #6688ff;
+  font-weight: bold;
+}
+/* 前 3 名特殊高亮 */
+.lb-table tbody tr:nth-child(1) td:first-child { color: #ffcc00; text-shadow: 0 0 4px rgba(255,204,0,0.5); }
+.lb-table tbody tr:nth-child(2) td:first-child { color: #cccccc; }
+.lb-table tbody tr:nth-child(3) td:first-child { color: #cc8855; }
+.lb-table tbody tr.lb-empty td {
+  text-align: center;
+  color: #6a7080;
+  padding: 24px 10px;
+  font-style: italic;
+}

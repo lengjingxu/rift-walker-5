@@ -99,6 +99,75 @@ def bitable_create_record(fields):
         return {"ok": False, "error": "bitable_write_failed"}
 
 
+# ---- T5.3: Leaderboard GET (fetch Bitable Top N, sort by score desc) ----
+# Sort strategy: Bitable search API needs constructed_filter + sort fields.
+# Simplified to: pull a batch, then sort by score desc in Python.
+# Avoids dependency on complex Bitable sort DSL.
+# Default limit=50, max 100, returns hasMore=true when there are more.
+DEFAULT_LEADERBOARD_LIMIT = 50
+MAX_LEADERBOARD_LIMIT = 100
+
+
+def bitable_list_top(limit):
+    """List recent leaderboard records, sort by score desc, return Top N."""
+    token = get_tenant_access_token()
+    if not token:
+        return {"ok": False, "error": "bitable_auth_unavailable"}
+
+    fetch_limit = min(MAX_LEADERBOARD_LIMIT, max(limit, 1))
+    url = "{}/bitable/v1/apps/{}/tables/{}/records?page_size={}".format(
+        FEISHU_OPEN_BASE, BITABLE_APP_TOKEN, BITABLE_TABLE_ID, fetch_limit
+    )
+    req = urllib.request.Request(
+        url,
+        method="GET",
+        headers={
+            "Authorization": "Bearer " + token,
+            "Content-Type": "application/json; charset=utf-8",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        print("[Bitable] list HTTP status={}".format(exc.code), flush=True)
+        return {"ok": False, "error": "bitable_read_failed"}
+    except Exception as exc:
+        print("[Bitable] list request failed: {}".format(type(exc).__name__), flush=True)
+        return {"ok": False, "error": "bitable_read_failed"}
+
+    if data.get("code") != 0:
+        print("[Bitable] list rejected: code={}".format(data.get("code")), flush=True)
+        return {"ok": False, "error": "bitable_read_failed"}
+
+    items = (data.get("data") or {}).get("items") or []
+
+    def _score(it):
+        try:
+            return float((it.get("fields") or {}).get("score") or 0)
+        except (TypeError, ValueError):
+            return 0.0
+    items_sorted = sorted(items, key=_score, reverse=True)
+
+    out = []
+    for it in items_sorted[:fetch_limit]:
+        f = it.get("fields") or {}
+        out.append({
+            "player": _text(f.get("player"), 64),
+            "buildHash": _text(f.get("buildHash"), 64),
+            "score": _number(f.get("score"), 0, 100000000),
+            "floor": _number(f.get("floor"), 0, 35),
+            "goldRemaining": _number(f.get("goldRemaining"), 0, 100000000),
+            "itemsBroughtOut": _item_count(f.get("itemsBroughtOut")),
+            "itemsLost": _item_count(f.get("itemsLost")),
+            "ending": _text(f.get("ending"), 32),
+            "classId": _text(f.get("classId"), 32),
+            "submittedAt": _text(f.get("submittedAt"), 64),
+        })
+
+    return {"ok": True, "items": out, "hasMore": len(items_sorted) > len(out)}
+
+
 def payload_to_bitable_fields(payload):
     """Validate T5.1 payload and map it to the actual Bitable field types."""
     if not isinstance(payload, dict):
@@ -221,13 +290,36 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
         result = bitable_create_record(fields)
         self._send_json(201 if result.get("ok") else 502, result)
 
+    def do_GET(self):
+        if _route_path(self.path) != "/api/leaderboard":
+            # Fall through to default static file serving
+            super().do_GET()
+            return
+
+        # Parse optional ?limit=N query (default 50, max 100)
+        try:
+            query = urlsplit(self.path).query
+            limit_param = DEFAULT_LEADERBOARD_LIMIT
+            for kv in query.split("&"):
+                if kv.startswith("limit="):
+                    try:
+                        limit_param = int(kv.split("=", 1)[1])
+                    except ValueError:
+                        limit_param = DEFAULT_LEADERBOARD_LIMIT
+                    break
+        except Exception:
+            limit_param = DEFAULT_LEADERBOARD_LIMIT
+
+        result = bitable_list_top(limit_param)
+        self._send_json(200 if result.get("ok") else 502, result)
+
     def do_OPTIONS(self):
         if _route_path(self.path) != "/api/leaderboard":
             self.send_error(404, "Not Found")
             return
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.send_header("Access-Control-Max-Age", "86400")
         self.end_headers()
