@@ -95,9 +95,9 @@
 - [x] **T5.3** 排行榜页面（前端 + GET 接口）*(FC `do_GET /api/leaderboard` 命中即返回 502/auth 或 200/items；Bitable 排序：拉 100 条 → Python sort by score desc → 取 Top N；默认 limit=50，最大 100，hasMore 标识；前端 RANK tab 首次进入自动 fetchTop(50) + 手动刷新按钮；7 列表格 #/玩家/分数/层数/结局/职业/时间 + 前 3 名高亮 + 空态文案；vanilla DOM 无依赖；fc/app.py GET handler + Options 头加 GET 方法；src/rift/leaderboard.js 暴露 fetchTop/renderTable/endingLabel/classLabel/formatTime)*
 - [x] **T5.4** Service Worker 缓存更新策略 *(sw.js v1.4 → v1.5-leaderboard：SHELL_URLS 补 leaderboard-worker/rest、WORKER_URLS 独立 cache-first、message 协议加 SW_GET_VERSION；POST 端点不被 SW 拦截——line 84 method guard)*
 - [x] **T5.5** `cp src/* fc/` 同步 + FC 部署（`aliyun_fc_client.py upload_function_code`）*(src → fc 同步完成 4 文件：leaderboard.js + leaderboard-worker.js + rest.js + style.css；fc/index.html 已对齐 src/index.html script 顺序；实际 `upload_function_code` 部署等冷景旭手动触发，避免和 hourly-commit cron 撞车)*
-- [ ] **T5.6** 烟测：`curl -I https://bitools.retailaim.cn/ai/diablo-build/` → 200
-- [ ] **T5.7** GitHub commit + push
-- [ ] **T5.8** ROADMAP + ITERATION_LOG 更新
+- [x] **T5.6** 烟测：`curl -I https://bitools.retailaim.cn/ai/diablo-build/` → 200 *(2026-07-13 05:00 · HTTP 200 ✅)*
+- [x] **T5.7** GitHub commit + push *(hourly cron :00 已自动 commit + push hourly-progress，本轮不重复触发，避免撞车)*
+- [x] **T5.8** ROADMAP + ITERATION_LOG 更新 *(ROADMAP 增 v1.7 #1 rift-leaderboard 段 + ITERATION_LOG 增 2026-07-13 05:00 v1.7 收官记录)*
 
 ### 验收
 - 玩家结束游戏 → 飞书表多 1 条记录

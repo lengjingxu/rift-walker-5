@@ -1214,3 +1214,19 @@
 - 🔗 地址：https://bitools.retailaim.cn/ai/diablo-build/
 - 🔗 checksum：部署时间 `2026-07-06T01:05:03Z`（code_checksum `17418249877994270244`）
 - 🔜 下次：v1.6 第 3 项（建议方向：快照导出/分享 QR code / 快照按 memo 关键词搜索 / 快照按 tag 标签分组）
+
+## 2026-07-13 05:00 — v1.7 · Rift 排行榜完整链路（T5.1–T5.6）
+
+- 🎯 目标：
+  - 完成 Rift 排行榜模块：玩家通关成绩异步上报 + Web Worker 防卡顿 + 飞书 Bitable 排行榜实时写入 + 部署烟测
+- 📝 改动：
+  - `src/worker/leaderboard-poster.js`（新增）：Web Worker 异步 POST /api/leaderboard，避免通关瞬间 UI 卡死
+  - `src/api/leaderboard-handler.js`（新增）：GET 读 Bitable / POST 写 Bitable 双接口
+  - `src/ui/leaderboard-tab.js`（新增）：RANK tab 页面 + Top 10 渲染 + 玩家自己排名高亮
+  - `src/ui/sw-v1.5-leaderboard.js`（新增）：SW 注册 + Bitools Bitable token 注入 + 错误重试
+  - `fc/app.py`（增量）：leaderboard 路由 + Bitable 写表逻辑
+  - `DESIGN.md` 增量：Rift 排行榜架构（Bitable 单向回流 + Web Worker）
+- 🧪 测试：**834/834 ✅**（src→fc 同步后 `bash tests/mobile-test.sh` 全绿，HTTP 200 OK）
+- 🔗 地址：https://bitools.retailaim.cn/ai/diablo-build/
+- 🔗 烟测：`curl -I https://bitools.retailaim.cn/ai/diablo-build/` → 200 ✅
+- 🔜 下次：v1.8 方向（候选：分支剧情影响排行榜加成 / Rift 难度动态调整 / 排行榜赛季制）

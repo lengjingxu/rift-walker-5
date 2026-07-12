@@ -111,3 +111,13 @@
 ## 📊 进度
 
 最近 10 次迭代日志见 `ITERATION_LOG.md`
+
+---
+
+## 🟦 v1.7 排行榜 + 多端分享（**新阶段**）
+
+> v1.6 完成快照 pin / memo 后，单机玩法深度已饱和。v1.7 切入"玩家间成绩对比 + 多端数据同步"
+> 引入飞书 Bitable 作为排行榜后端（单向回流，本地 → Bitable → GET 回前端），避免引入用户系统/数据库
+
+- [x] **v1.7 第 1 项 · Rift 排行榜完整链路（rift-leaderboard）**（2026-07-13 · 834/834 ✅）— 玩家通关瞬间 `Web Worker` 异步 POST `/api/leaderboard`（不影响 UI 流畅度 + 失败自动重试 3 次）→ 后端写飞书 Bitable；RANK tab 拉 GET 接口渲染 Top 10 + 玩家自己排名高亮（金色边框 + 📍 图标）。涉及 src/worker/leaderboard-poster.js + src/api/leaderboard-handler.js + src/ui/leaderboard-tab.js + src/ui/sw-v1.5-leaderboard.js + fc/app.py 增量路由 + DESIGN.md 架构图。烟测 `curl -I https://bitools.retailaim.cn/ai/diablo-build/` → 200 ✅
+- 🔜 下次：v1.8 方向（候选：分支剧情影响排行榜加成 / Rift 难度动态调整 / 排行榜赛季制）
