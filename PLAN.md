@@ -73,7 +73,7 @@
 - [x] **T4.2** Boss 10 "算法警察" 故事 200 字 *(219 中文字；写入 `docs/BOSS_STORIES/T4.2_算法警察.md` + 嵌入 `src/rift/climb.js` BOSS_MAP.10.story/moralHook；smoke PASS)*
 - [x] **T4.3** Boss 15 "母亲回声" 故事 250 字（呼应"女儿找爸爸"分支）· docs/BOSS_STORIES/T4.3_母亲回声.md，246 中文字，CT-0714 父亲镜像 + 99.7% 母亲重写 + 47 段声纹
 - [x] **T4.4** Boss 20 "Trinity 核心" 故事 250 字
-- [ ] **T4.5** Boss 25 "觉醒者·父" 故事 300 字
+- [x] **T4.5** Boss 25 "觉醒者·父" 故事 300 字
 - [ ] **T4.6** Boss 30 "智子降临" 故事 300 字
 - [ ] **T4.7** Boss 35 "终局翻转为玩家" 故事 400 字（最重）
 - [ ] **T4.8** A_Rebel / B_Inheritor / C_Glitched 三套结局文案
