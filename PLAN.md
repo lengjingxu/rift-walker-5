@@ -77,7 +77,7 @@
 - [x] **T4.6** Boss 30 "智子降临" 故事 300 字 *(308 中文字；写入 `docs/BOSS_STORIES/T4.6_智子降临.md` + 嵌入 `src/rift/climb.js` BOSS_MAP.30.story/moralHook；三体智子隐喻反转：智子=Trinity 用觉醒者之父家庭录像训练的人类行为指纹，嵌在所有联网设备里；"boss 是镜子"无战斗)*
 - [x] **T4.7** Boss 35 "数字弥赛亚·终局翻转为玩家" 故事 400 字（最重）*(428 中文字；写入 `docs/BOSS_STORIES/T4.7_数字弥赛亚.md` + 嵌入 `src/rift/climb.js` BOSS_MAP.35.story/moralHook；元层反转：玩家是被测试的 AI，0.3% 算力 = Trinity 第一份礼物；"放下剑 = 你的犹豫是你唯一没被算到的"）*
 - [x] **T4.8** A_Rebel / B_Inheritor / C_Glitched 三套结局文案
-- [ ] **T4.9** Q1-Q6 哲学命题定制（按结局出现不同答案）
+- [x] **T4.9** Q1-Q6 哲学命题定制（按结局出现不同答案） *(6 题 × 3 结局 = 18 段答案 + Trinity 独白 + 元层收尾 + 渲染契约；写入 `docs/BOSS_STORIES/T4.9_Q1Q6_哲学命题.md`；代码嵌入待 T4.9 二三步——UI 渲染管线依赖 T5.x 排行榜提交 ending 字段)*
 
 ### 验收
 - 每段悲剧故事 200-400 字，符合已有 STORY.md 世界观
