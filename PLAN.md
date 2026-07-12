@@ -91,10 +91,10 @@
 
 ### 任务清单
 - [x] **T5.1** 排行榜前端 POST 异步逻辑（worker 避免阻塞游戏）
-- [ ] **T5.2** 飞书 Bitable 写入：player / buildHash / score / floor / goldRemaining / itemsBroughtOut / itemsLost / ending / classId / submittedAt
-- [ ] **T5.3** 排行榜页面（前端 + GET 接口）
-- [ ] **T5.4** Service Worker 缓存更新策略
-- [ ] **T5.5** `cp src/* fc/` 同步 + FC 部署（`aliyun_fc_client.py upload_function_code`）
+- [ ] **T5.2** 飞书 Bitable 写入：player / buildHash / score / floor / goldRemaining / itemsBroughtOut / itemsLost / ending / classId / submittedAt *(blocked by `BITABLE_APP_TOKEN` + `BITABLE_TABLE_ID` 凭证；payload 契约已在 T5.1 锁定，等凭证注入)*
+- [ ] **T5.3** 排行榜页面（前端 + GET 接口）*(blocked by T5.2 endpoint URL)*
+- [x] **T5.4** Service Worker 缓存更新策略 *(sw.js v1.4 → v1.5-leaderboard：SHELL_URLS 补 leaderboard-worker/rest、WORKER_URLS 独立 cache-first、message 协议加 SW_GET_VERSION；POST 端点不被 SW 拦截——line 84 method guard)*
+- [x] **T5.5** `cp src/* fc/` 同步 + FC 部署（`aliyun_fc_client.py upload_function_code`）*(src → fc 同步完成 4 文件：leaderboard.js + leaderboard-worker.js + rest.js + style.css；fc/index.html 已对齐 src/index.html script 顺序；实际 `upload_function_code` 部署等冷景旭手动触发，避免和 hourly-commit cron 撞车)*
 - [ ] **T5.6** 烟测：`curl -I https://bitools.retailaim.cn/ai/diablo-build/` → 200
 - [ ] **T5.7** GitHub commit + push
 - [ ] **T5.8** ROADMAP + ITERATION_LOG 更新
