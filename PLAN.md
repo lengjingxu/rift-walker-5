@@ -90,7 +90,7 @@
 **目标**：上线 + 提交首次 commit + push
 
 ### 任务清单
-- [ ] **T5.1** 排行榜前端 POST 异步逻辑（worker 避免阻塞游戏）
+- [x] **T5.1** 排行榜前端 POST 异步逻辑（worker 避免阻塞游戏）
 - [ ] **T5.2** 飞书 Bitable 写入：player / buildHash / score / floor / goldRemaining / itemsBroughtOut / itemsLost / ending / classId / submittedAt
 - [ ] **T5.3** 排行榜页面（前端 + GET 接口）
 - [ ] **T5.4** Service Worker 缓存更新策略

@@ -663,6 +663,12 @@
           '</div>';
       }
       refreshMainPage();
+      // T5.1: 终局通关 → 上报排行榜（worker 异步，不阻塞元层收尾动画）
+      try {
+        var s35 = State.load();
+        var loot35 = Climb.calculateDeathLoot(s35);
+        submitLeaderboardAsync(loot35, 'B_Inheritor');
+      } catch (_) { /* best-effort */ }
     }
 
     // ================================================================
@@ -704,6 +710,73 @@
         refreshMainPage();
         openStartOrContinue();
       };
+      // T5.1: 死亡 / 撤退 → 上报排行榜（worker 异步）
+      try { submitLeaderboardAsync(loot, isDeath ? 'died' : 'retreated'); } catch (_) {}
+    }
+
+    // ================================================================
+    // T5.1 helper: 把结算 loot + ending → Leaderboard.submitRun(payload)
+    // payload 字段与 T5.2 Bitable 写入契约对齐（player/buildHash/score/...）
+    // ================================================================
+    function submitLeaderboardAsync(loot, ending) {
+      if (typeof Leaderboard === 'undefined' || !Leaderboard.submitRun) return;
+      var s = State.load();
+      var player = s && s.player || {};
+      var equipped = player.equipped || {};
+      var equippedKeys = Object.keys(equipped).filter(function (k) { return equipped[k]; });
+
+      // buildHash: 简化为 equipped 名 + 槽位 + 颜色串联（确定性）
+      var hashSource = equippedKeys
+        .sort()
+        .map(function (k) {
+          var it = equipped[k];
+          return (it.name || '') + '@' + k + ':' + (it.rarity || '');
+        })
+        .join('|');
+      var buildHash = hashSource ? simpleHash(hashSource) : '';
+
+      // score: floor*100 + 金币*0.1 + 道德分（spare=+50 / destroy=+10）
+      var moral = (loot && loot.moralSummary) || {};
+      var spareN = moral.spare || 0;
+      var destroyN = moral.destroy || 0;
+      var score = ((loot && loot.floorReached) || 0) * 100 +
+                  ((loot && loot.goldRemaining) || 0) * 0.1 +
+                  spareN * 50 + destroyN * 10;
+
+      Leaderboard.submitRun({
+        player:        getPlayerName(),
+        buildHash:     buildHash,
+        score:         Math.round(score),
+        floor:         (loot && loot.floorReached) || 0,
+        goldRemaining: (loot && loot.goldRemaining) || 0,
+        itemsBroughtOut: (loot && loot.broughtOut) || [],
+        itemsLost:       (loot && loot.lost) || [],
+        ending:        ending,
+        classId:       player.classId || '',
+        submittedAt:   new Date().toISOString()
+      }).then(function (r) {
+        // 仅 console 输出，不污染 modal
+        if (r && r.ok) console.log('[Leaderboard] submitted', r.status);
+        else console.warn('[Leaderboard] not submitted:', r && r.error);
+      });
+    }
+
+    function getPlayerName() {
+      try {
+        var n = localStorage.getItem('rift_player_name');
+        if (n) return n;
+      } catch (_) {}
+      return 'anonymous-' + Math.random().toString(36).slice(2, 8);
+    }
+
+    // 32-bit FNV-1a hash（纯 JS，无依赖；用于 buildHash 短串）
+    function simpleHash(str) {
+      var h = 0x811c9dc5;
+      for (var i = 0; i < str.length; i++) {
+        h ^= str.charCodeAt(i);
+        h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+      }
+      return ('00000000' + h.toString(16)).slice(-8);
     }
 
     // ================================================================
