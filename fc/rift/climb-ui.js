@@ -268,6 +268,15 @@
     function openFloor(floor) {
       var s = State.load();
 
+      // T2.4：道德分支剧情事件（先于一切 modals，给叙事落地）
+      var branchEvent = Climb.checkBranchEvent(s, floor);
+      if (branchEvent) {
+        promptBranchEventModal(s, branchEvent, floor, function () {
+          openFloor(s, floor); // 分支 modal 关后重入 openFloor，走后续 brine / 战斗流程
+        });
+        return;
+      }
+
       // T2.1：每 10 层先弹血瓶带入决策 modal（强制，不跳过）
       if (Climb.isBrineGateFloor(floor)) {
         promptBrineGateModal(s, floor, function () {
@@ -278,6 +287,72 @@
       }
 
       openFloorCombat(s, floor);
+    }
+
+    // ================================================================
+    // Modal 3a：道德分支剧情事件（T2.4，floor 20/25 触发，按 moralBias）
+    // ================================================================
+    function promptBranchEventModal(s, branchEvent, floor, onClose) {
+      var ev = branchEvent;
+      var biasLabel = ev.moralBias === 'spare' ? '✋ 不伤' : '🩸 终结';
+      var choices = ev.choices || [];
+      var buttonsHtml = choices.map(function (c, idx) {
+        var cssClass = idx === 0 ? 'rv-choice-spare' : 'rv-choice-destroy';
+        return '<button class="rv-choice-btn ' + cssClass + '" data-choice-id="' + c.id + '">' +
+                 '<span class="rv-choice-label">' + c.label + '</span>' +
+               '</button>';
+      }).join('');
+
+      var shell = openModal(
+        '<div class="rv-modal rv-modal-wide">' +
+          '<div class="rv-floor-badge rv-boss-badge">第 ' + floor + ' 层 · 道德分支</div>' +
+          '<div class="rv-boss-lore"><strong>' + ev.title + '</strong> · ' + biasLabel + ' 偏向 ' + ev.currentRatio + '%</div>' +
+          '<div class="rv-branch-text">' + (ev.text || '').replace(/\n/g, '<br>') + '</div>' +
+          '<div class="rv-choice-row">' + buttonsHtml + '</div>' +
+        '</div>'
+      );
+
+      shell.querySelectorAll('.rv-choice-btn').forEach(function (btn) {
+        btn.onclick = function () {
+          var choiceId = btn.getAttribute('data-choice-id');
+          var choice = choices.find(function (c) { return c.id === choiceId; });
+          if (!choice || !choice.effect) {
+            closeModal(shell);
+            if (typeof onClose === 'function') onClose();
+            return;
+          }
+          applyBranchEventEffect(s, choice.effect, floor);
+          State.save(s);
+          closeModal(shell);
+          if (typeof onClose === 'function') onClose();
+        };
+      });
+    }
+
+    /** 把分支事件的 effect 落到 state 上 */
+    function applyBranchEventEffect(s, effect, floor) {
+      if (!effect) return;
+      // 道德累积：spare/destroy ±1
+      if (effect.moralSpare) {
+        for (var i = 0; i < Math.abs(effect.moralSpare); i++) {
+          if (effect.moralSpare > 0) State.setChoice('spared');
+          else State.setChoice('destroyed');
+        }
+      }
+      if (effect.moralDestroy) {
+        for (var j = 0; j < Math.abs(effect.moralDestroy); j++) {
+          State.setChoice('destroyed');
+        }
+      }
+      // 金币奖励
+      if (effect.goldBonus) {
+        s.player.gold = (s.player.gold || 0) + effect.goldBonus;
+      }
+      // boss 弱化（标记到下一层 boss 战，对应 floor）
+      if (effect.bossWeaken) {
+        s._bossWeaken = s._bossWeaken || {};
+        s._bossWeaken[floor] = effect.bossWeaken;
+      }
     }
 
     // 战斗 modal（怪物 + 胜率 + 2 按钮）
@@ -337,12 +412,19 @@
     // ================================================================
     function promptMoralChoiceThenBoss(boss) {
       var mc = Climb.showMoralChoice(boss.id);
-      var lore = (boss && (boss.lore || boss.theme)) || mc.theme || '';
+      // 优先读 boss.story（T4.x 长篇），fallback 到 lore/theme
+      var loreRaw = (boss && (boss.story || boss.lore || boss.theme)) || mc.story || mc.theme || '';
+      // 把 \n 换成段落 <p>，长篇故事更好读
+      var lore = loreRaw
+        ? loreRaw.split(/\n\s*\n/).map(function (p) { return '<p>' + p.replace(/\n/g, '<br>') + '</p>'; }).join('')
+        : '';
+      // 道德钩子（如果有）
+      var hook = boss && boss.moralHook ? '<span class="rv-moral-hook">' + boss.moralHook + '</span>' : '';
 
       var shell = openModal(
         '<div class="rv-modal rv-modal-wide">' +
           '<div class="rv-floor-badge rv-boss-badge">' + mc.bossName + ' · BOSS</div>' +
-          '<div class="rv-boss-lore">' + lore + '</div>' +
+          '<div class="rv-boss-lore">' + lore + hook + '</div>' +
           '<div class="rv-choice-row">' +
             '<button class="rv-choice-btn rv-choice-destroy" id="rv-choose-a">' +
               '<span class="rv-choice-label">' + mc.choiceA.label + '</span>' +
@@ -581,6 +663,12 @@
           '</div>';
       }
       refreshMainPage();
+      // T5.1: 终局通关 → 上报排行榜（worker 异步，不阻塞元层收尾动画）
+      try {
+        var s35 = State.load();
+        var loot35 = Climb.calculateDeathLoot(s35);
+        submitLeaderboardAsync(loot35, 'B_Inheritor');
+      } catch (_) { /* best-effort */ }
     }
 
     // ================================================================
@@ -622,6 +710,73 @@
         refreshMainPage();
         openStartOrContinue();
       };
+      // T5.1: 死亡 / 撤退 → 上报排行榜（worker 异步）
+      try { submitLeaderboardAsync(loot, isDeath ? 'died' : 'retreated'); } catch (_) {}
+    }
+
+    // ================================================================
+    // T5.1 helper: 把结算 loot + ending → Leaderboard.submitRun(payload)
+    // payload 字段与 T5.2 Bitable 写入契约对齐（player/buildHash/score/...）
+    // ================================================================
+    function submitLeaderboardAsync(loot, ending) {
+      if (typeof Leaderboard === 'undefined' || !Leaderboard.submitRun) return;
+      var s = State.load();
+      var player = s && s.player || {};
+      var equipped = player.equipped || {};
+      var equippedKeys = Object.keys(equipped).filter(function (k) { return equipped[k]; });
+
+      // buildHash: 简化为 equipped 名 + 槽位 + 颜色串联（确定性）
+      var hashSource = equippedKeys
+        .sort()
+        .map(function (k) {
+          var it = equipped[k];
+          return (it.name || '') + '@' + k + ':' + (it.rarity || '');
+        })
+        .join('|');
+      var buildHash = hashSource ? simpleHash(hashSource) : '';
+
+      // score: floor*100 + 金币*0.1 + 道德分（spare=+50 / destroy=+10）
+      var moral = (loot && loot.moralSummary) || {};
+      var spareN = moral.spare || 0;
+      var destroyN = moral.destroy || 0;
+      var score = ((loot && loot.floorReached) || 0) * 100 +
+                  ((loot && loot.goldRemaining) || 0) * 0.1 +
+                  spareN * 50 + destroyN * 10;
+
+      Leaderboard.submitRun({
+        player:        getPlayerName(),
+        buildHash:     buildHash,
+        score:         Math.round(score),
+        floor:         (loot && loot.floorReached) || 0,
+        goldRemaining: (loot && loot.goldRemaining) || 0,
+        itemsBroughtOut: (loot && loot.broughtOut) || [],
+        itemsLost:       (loot && loot.lost) || [],
+        ending:        ending,
+        classId:       player.classId || '',
+        submittedAt:   new Date().toISOString()
+      }).then(function (r) {
+        // 仅 console 输出，不污染 modal
+        if (r && r.ok) console.log('[Leaderboard] submitted', r.status);
+        else console.warn('[Leaderboard] not submitted:', r && r.error);
+      });
+    }
+
+    function getPlayerName() {
+      try {
+        var n = localStorage.getItem('rift_player_name');
+        if (n) return n;
+      } catch (_) {}
+      return 'anonymous-' + Math.random().toString(36).slice(2, 8);
+    }
+
+    // 32-bit FNV-1a hash（纯 JS，无依赖；用于 buildHash 短串）
+    function simpleHash(str) {
+      var h = 0x811c9dc5;
+      for (var i = 0; i < str.length; i++) {
+        h ^= str.charCodeAt(i);
+        h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+      }
+      return ('00000000' + h.toString(16)).slice(-8);
     }
 
     // ================================================================

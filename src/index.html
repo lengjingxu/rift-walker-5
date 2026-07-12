@@ -353,6 +353,16 @@
 <script src="rift/rest.js"></script>
 <script src="rift/climb-ui.js"></script>
 <script src="rift/leaderboard.js"></script>
+<script>
+  // T5.2: 排行榜 POST 端点注入（与 FC /api/leaderboard 对齐）
+  // 自动检测当前部署路径前缀，构造完整端点 URL
+  // FC 部署: https://bitools.retailaim.cn/ai/diablo-build/ → endpoint = https://bitools.retailaim.cn/ai/diablo-build/api/leaderboard
+  // 本地开发: http://localhost:9000/ → endpoint = http://localhost:9000/api/leaderboard
+  if (!window.LEADERBOARD_ENDPOINT) {
+    var base = window.location.pathname.replace(/\/index\.html$/, '').replace(/\/$/, '') || '';
+    window.LEADERBOARD_ENDPOINT = window.location.origin + base + '/api/leaderboard';
+  }
+</script>
 <script src="rift/index.js"></script>
 <script>
   // v2.0 · CLIMB tab 初始化

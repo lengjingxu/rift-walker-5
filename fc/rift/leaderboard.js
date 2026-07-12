@@ -21,7 +21,7 @@
 //   - submittedAt     ISO string
 //
 // 失败策略：best-effort，失败仅 console.warn，不影响游戏。
-// endpoint 由 window.LEADERBOARD_ENDPOINT 注入（T5.2 部署后注入）。
+// endpoint 由 window.LEADERBOARD_ENDPOINT 注入（T5.2 已实现自动检测：基于 pathname 构造完整 URL）。
 
 (function () {
   'use strict';

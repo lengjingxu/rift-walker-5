@@ -6,14 +6,18 @@
  *   - 其它（同源 GET）: network-first with cache fallback
  *   - 离线导航回退：offline.html
  *
- * 版本：v1.5 · T5.4 缓存策略升级（v2.15 排行榜 POST 链路 + Phase 2 引入 rift/battle + rift/rest）
+ * 版本：v1.6 · T5.2 Bitable 写入端点 + API leaderboard POST + CORS OPTIONS + endpoint 自动注入
+ *   - v1.5 全部保留
+ *   - 升级点 5：缓存版本 v1.5 → v1.6-t52-bitable（前端 LEADERBOARD_ENDPOINT 注入 + FC /api/leaderboard 端点）
+ *   - 升级点 6：SHELL_URLS 补全 app.py（FC handler 脚本也需秒开缓存）
+ *   - 升级点 7：fetch handler 新增 CORS OPTIONS 返回 204（与 app.py do_OPTIONS 对齐）
  *   - 升级点 1：SHELL_URLS 补全 rift/leaderboard.js + rift/leaderboard-worker.js + rift/battle.js + rift/rest.js
  *   - 升级点 2：WORKER_URLS 白名单（worker 文件独立 cache，避免 SW 拦截 POST 请求——fetch handler 只处理 GET 已是 v1.4 行为，v1.5 显式注释）
  *   - 升级点 3：缓存版本从 v1.4.9-rift-minimal → v1.5-leaderboard（强制让旧客户端 skipWaiting 后拉新 shell）
  *   - 升级点 4：message 协议扩展 SW_GET_VERSION（前端可探活部署后的 SW_VERSION 字串）
  */
 
-const SW_VERSION = 'diablo-v1.5-leaderboard';
+const SW_VERSION = 'diablo-v1.6-t52-bitable';
 const CACHE_SHELL = `${SW_VERSION}-shell`;
 const CACHE_DATA  = `${SW_VERSION}-data`;
 const CACHE_WORKER = `${SW_VERSION}-worker`;
